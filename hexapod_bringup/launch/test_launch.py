@@ -8,28 +8,16 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     ld = LaunchDescription()
 
-    ld.add_action(IncludeLaunchDescription(PythonLaunchDescriptionSource([
-        FindPackageShare("oca_communication"), '/launch', '/communication_launch.py'])))
-
-    # ld.add_action(IncludeLaunchDescription(PythonLaunchDescriptionSource([
-    #     FindPackageShare("oca_hmi"), '/launch', '/hmi_launch.py'])))
-
-    # ld.add_action(IncludeLaunchDescription(PythonLaunchDescriptionSource([
-    #     FindPackageShare("oca_servo_controller"), '/launch', '/servo_controller_launch.py'])))
-    
     ld.add_action(IncludeLaunchDescription(AnyLaunchDescriptionSource([
-        FindPackageShare("oca_movement"), '/launch', '/movement_launch.py'])))
+        FindPackageShare("hexapod_movement"), '/launch', '/movement_launch.py'])))
 
     ld.add_action(IncludeLaunchDescription(PythonLaunchDescriptionSource([
-        FindPackageShare("oca_teleop"), '/launch', '/teleop_launch.py'])))
+        FindPackageShare("hexapod_teleop"), '/launch', '/teleop_launch.py'])))
 
-    # delay brain launch
-    # - the HMI node needs to be started first (it needs the servo voltage released by the relay. The relay is controlled by the HMI node)
-    # - the servo node needs to be started first (the servo status is needed by the brain node)
-    delay_brain_launch = launch.actions.TimerAction(period=5.0, actions=[IncludeLaunchDescription(PythonLaunchDescriptionSource([
-        FindPackageShare("oca_brain"), '/launch', '/brain_launch.py']))])
+    delay_brain_launch = launch.actions.TimerAction(period=3.0, actions=[
+        IncludeLaunchDescription(PythonLaunchDescriptionSource([
+            FindPackageShare("hexapod_brain"), '/launch', '/brain_launch.py']))])
 
     ld.add_action(delay_brain_launch)
 
     return ld
-

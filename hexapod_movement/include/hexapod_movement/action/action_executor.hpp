@@ -8,7 +8,7 @@
 #include <list>
 
 #include "handler/servohandler.hpp"
-#include "oca_interfaces/msg/movement_request.hpp"
+#include "hexapod_interfaces/msg/movement_request.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "requester/requests.hpp"
 

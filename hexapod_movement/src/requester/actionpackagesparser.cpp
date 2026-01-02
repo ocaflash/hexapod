@@ -11,7 +11,7 @@ CActionPackagesParser::CActionPackagesParser(std::shared_ptr<rclcpp::Node> node)
 }
 
 void CActionPackagesParser::readJson() {
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("oca_movement");
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("hexapod_movement");
     std::string file_path = package_share_directory + "/config/actionpackages.json";
     json json_data;
     std::ifstream json_file(file_path);

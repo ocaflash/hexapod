@@ -18,7 +18,7 @@ CTextInterpreter::CTextInterpreter(std::shared_ptr<rclcpp::Node> node) : node_(n
 }
 
 void CTextInterpreter::readInterpretation() {
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("oca_brain");
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("hexapod_brain");
     std::string file_path = package_share_directory + "/config/interpretation.json";
     json json_data;
     std::ifstream json_file(file_path);

@@ -4,7 +4,7 @@
 
 #include "requester/requester.hpp"
 
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 using std::placeholders::_1;
 
 CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActionExecutor> actionExecutor)

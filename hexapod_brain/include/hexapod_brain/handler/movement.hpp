@@ -7,7 +7,7 @@
 #include "rclcpp/rclcpp.hpp"
 //
 #include "geometry_msgs/msg/twist.hpp"
-#include "oca_interfaces/msg/movement_request.hpp"
+#include "hexapod_interfaces/msg/movement_request.hpp"
 //
 #include "callback_timer.hpp"
 #include "ihandler.hpp"
@@ -29,7 +29,7 @@ class CMovement : public IHandler {
     void timerCallback();
 
     std::shared_ptr<rclcpp::Node> node_;
-    rclcpp::Publisher<oca_interfaces::msg::MovementRequest>::SharedPtr pub_;
+    rclcpp::Publisher<hexapod_interfaces::msg::MovementRequest>::SharedPtr pub_;
     std::shared_ptr<CCallbackTimer> callbackTimer_;
 };
 

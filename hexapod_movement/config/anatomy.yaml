@@ -53,6 +53,5 @@ node_movement:
     BODY_MAX_PITCH: 20.0 # deg
     BODY_MAX_YAW: 20.0   # deg
 
-    HEAD_MAX_YAW: 30.0
-    HEAD_MAX_PITCH: 20.0
+    # Head removed - 18 servos configuration (no head)
 

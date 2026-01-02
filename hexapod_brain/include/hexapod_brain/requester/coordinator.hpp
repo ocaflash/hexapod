@@ -8,9 +8,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
 //
-#include "oca_interfaces/msg/joystick_request.hpp"
-#include "oca_interfaces/msg/movement_request.hpp"
-#include "oca_interfaces/msg/servo_status.hpp"
+#include "hexapod_interfaces/msg/joystick_request.hpp"
+#include "hexapod_interfaces/msg/movement_request.hpp"
+#include "hexapod_interfaces/msg/servo_status.hpp"
 //
 #include "action/action_planner.hpp"
 #include "handler/callback_timer.hpp"
@@ -29,10 +29,10 @@ class CCoordinator : public IRequester {
 
     void update() override;
 
-    void joystickRequestReceived(const oca_interfaces::msg::JoystickRequest& msg);
+    void joystickRequestReceived(const hexapod_interfaces::msg::JoystickRequest& msg);
     void speechRecognized(std::string text);
     void supplyVoltageReceived(float voltage);
-    void servoStatusReceived(const oca_interfaces::msg::ServoStatus& msg);
+    void servoStatusReceived(const hexapod_interfaces::msg::ServoStatus& msg);
 
    private:
     template <typename RequestT, typename... Args>
@@ -40,7 +40,7 @@ class CCoordinator : public IRequester {
 
     void submitRequestMove(uint32_t movementType, uint32_t duration_ms = 0, std::string comment = "",
                            Prio prio = Prio::Normal,
-                           oca_interfaces::msg::Pose body = oca_interfaces::msg::Pose());
+                           hexapod_interfaces::msg::Pose body = hexapod_interfaces::msg::Pose());
 
     void requestShutdown(Prio prio);
     void requestReactionOnError(std::string text, bool isShutdownRequested, Prio prio = Prio::Normal);
@@ -69,7 +69,7 @@ class CCoordinator : public IRequester {
     std::atomic<bool> isNewMoveRequestLocked_{false};
 
     geometry_msgs::msg::Twist actualVelocity_ = geometry_msgs::msg::Twist();
-    uint32_t actualMovementType_ = oca_interfaces::msg::MovementRequest::NO_REQUEST;
+    uint32_t actualMovementType_ = hexapod_interfaces::msg::MovementRequest::NO_REQUEST;
     bool isStanding_ = false;
     bool isRelayOn_ = false;
 
@@ -79,27 +79,27 @@ class CCoordinator : public IRequester {
     float param_activate_movement_waiting_ = false;
 
     std::map<uint32_t, std::string> movementTypeName_ = {
-        {oca_interfaces::msg::MovementRequest::NO_REQUEST, "NO_REQUEST"},
-        {oca_interfaces::msg::MovementRequest::LAYDOWN, "LAYDOWN"},
-        {oca_interfaces::msg::MovementRequest::STAND_UP, "STAND_UP"},
-        {oca_interfaces::msg::MovementRequest::WAITING, "WAITING"},
-        {oca_interfaces::msg::MovementRequest::MOVE, "MOVE"},
-        {oca_interfaces::msg::MovementRequest::MOVE_TO_STAND, "MOVE_TO_STAND"},
-        {oca_interfaces::msg::MovementRequest::WATCH, "WATCH"},
-        {oca_interfaces::msg::MovementRequest::LOOK_LEFT, "LOOK_LEFT"},
-        {oca_interfaces::msg::MovementRequest::LOOK_RIGHT, "LOOK_RIGHT"},
-        {oca_interfaces::msg::MovementRequest::DANCE, "DANCE"},
-        {oca_interfaces::msg::MovementRequest::HIGH_FIVE, "HIGH_FIVE"},
-        {oca_interfaces::msg::MovementRequest::LEGS_WAVE, "LEGS_WAVE"},
-        {oca_interfaces::msg::MovementRequest::BODY_ROLL, "BODY_ROLL"},
-        {oca_interfaces::msg::MovementRequest::BITE, "BITE"},
-        {oca_interfaces::msg::MovementRequest::STOMP, "STOMP"},
-        {oca_interfaces::msg::MovementRequest::CLAP, "CLAP"},
-        {oca_interfaces::msg::MovementRequest::TRANSPORT, "TRANSPORT"},
-        {oca_interfaces::msg::MovementRequest::TESTBODY, "TESTBODY"},
-        {oca_interfaces::msg::MovementRequest::TESTLEGS, "TESTLEGS"},
-        {oca_interfaces::msg::MovementRequest::NEUTRAL, "NEUTRAL"},
-        {oca_interfaces::msg::MovementRequest::CALIBRATE, "CALIBRATE"},
+        {hexapod_interfaces::msg::MovementRequest::NO_REQUEST, "NO_REQUEST"},
+        {hexapod_interfaces::msg::MovementRequest::LAYDOWN, "LAYDOWN"},
+        {hexapod_interfaces::msg::MovementRequest::STAND_UP, "STAND_UP"},
+        {hexapod_interfaces::msg::MovementRequest::WAITING, "WAITING"},
+        {hexapod_interfaces::msg::MovementRequest::MOVE, "MOVE"},
+        {hexapod_interfaces::msg::MovementRequest::MOVE_TO_STAND, "MOVE_TO_STAND"},
+        {hexapod_interfaces::msg::MovementRequest::WATCH, "WATCH"},
+        {hexapod_interfaces::msg::MovementRequest::LOOK_LEFT, "LOOK_LEFT"},
+        {hexapod_interfaces::msg::MovementRequest::LOOK_RIGHT, "LOOK_RIGHT"},
+        {hexapod_interfaces::msg::MovementRequest::DANCE, "DANCE"},
+        {hexapod_interfaces::msg::MovementRequest::HIGH_FIVE, "HIGH_FIVE"},
+        {hexapod_interfaces::msg::MovementRequest::LEGS_WAVE, "LEGS_WAVE"},
+        {hexapod_interfaces::msg::MovementRequest::BODY_ROLL, "BODY_ROLL"},
+        {hexapod_interfaces::msg::MovementRequest::BITE, "BITE"},
+        {hexapod_interfaces::msg::MovementRequest::STOMP, "STOMP"},
+        {hexapod_interfaces::msg::MovementRequest::CLAP, "CLAP"},
+        {hexapod_interfaces::msg::MovementRequest::TRANSPORT, "TRANSPORT"},
+        {hexapod_interfaces::msg::MovementRequest::TESTBODY, "TESTBODY"},
+        {hexapod_interfaces::msg::MovementRequest::TESTLEGS, "TESTLEGS"},
+        {hexapod_interfaces::msg::MovementRequest::NEUTRAL, "NEUTRAL"},
+        {hexapod_interfaces::msg::MovementRequest::CALIBRATE, "CALIBRATE"},
     };
 };
 

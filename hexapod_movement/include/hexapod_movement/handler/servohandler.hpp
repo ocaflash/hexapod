@@ -8,8 +8,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 //
-#include "oca_interfaces/msg/servo_index.hpp"
-#include "oca_interfaces/msg/servo_request.hpp"
+#include "hexapod_interfaces/msg/servo_index.hpp"
+#include "hexapod_interfaces/msg/servo_request.hpp"
 //
 #include "callback_timer.hpp"
 #include "requester/requests.hpp"
@@ -35,8 +35,8 @@ class CServoHandler {
 
     std::shared_ptr<rclcpp::Node> node_;
     std::map<uint32_t, float> jointAngles_;
-    rclcpp::Publisher<oca_interfaces::msg::ServoRequest>::SharedPtr pubServoRequest_;
-    oca_interfaces::msg::ServoRequest msgServoRequest_;
+    rclcpp::Publisher<hexapod_interfaces::msg::ServoRequest>::SharedPtr pubServoRequest_;
+    hexapod_interfaces::msg::ServoRequest msgServoRequest_;
     std::shared_ptr<CCallbackTimer> callbackTimer_;
 
     std::function<void()> doneCallback_;

@@ -5,7 +5,7 @@
 #include "handler/movement.hpp"
 
 using namespace std::chrono_literals;
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 
 namespace brain {
 

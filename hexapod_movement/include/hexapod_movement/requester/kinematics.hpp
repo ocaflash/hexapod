@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-#include "oca_interfaces/msg/pose.hpp"
+#include "hexapod_interfaces/msg/pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 enum class ELegIndex {
@@ -57,7 +57,7 @@ class CPose {
         : position(x, y, z), orientation(roll, pitch, yaw) {};
     CPose(CPosition position, COrientation orientation) : position(position), orientation(orientation) {};
 
-    CPose(const oca_interfaces::msg::Pose& pose)
+    CPose(const hexapod_interfaces::msg::Pose& pose)
         : position(pose.position.x, pose.position.y, pose.position.z),
           orientation(pose.orientation.roll, pose.orientation.pitch, pose.orientation.yaw) {};
 

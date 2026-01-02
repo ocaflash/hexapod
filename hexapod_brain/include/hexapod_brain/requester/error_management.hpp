@@ -6,7 +6,7 @@
 
 #include <deque>
 
-#include "oca_interfaces/msg/servo_status.hpp"
+#include "hexapod_interfaces/msg/servo_status.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "requester/utility.hpp"
 
@@ -26,7 +26,7 @@ class CErrorManagement {
     CErrorManagement(std::shared_ptr<rclcpp::Node> node);
     virtual ~CErrorManagement() = default;
 
-    EError getErrorServo(const oca_interfaces::msg::ServoStatus& msg);
+    EError getErrorServo(const hexapod_interfaces::msg::ServoStatus& msg);
     EError filterSupplyVoltage(float voltage);
 
     float getFilteredSupplyVoltage();
@@ -52,8 +52,8 @@ class CErrorManagement {
     }
 
    private:
-    EError filterServoVoltage(const oca_interfaces::msg::ServoStatus& msg);
-    EError getStatusServoTemperature(const oca_interfaces::msg::ServoStatus& msg);
+    EError filterServoVoltage(const hexapod_interfaces::msg::ServoStatus& msg);
+    EError getStatusServoTemperature(const hexapod_interfaces::msg::ServoStatus& msg);
     EError getStatusVoltage(const float voltage, const float voltageLow, const float voltageCriticalLow);
     float calculateAverageValue(std::deque<float>& filteredValues, float voltage);
 

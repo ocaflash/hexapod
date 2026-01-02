@@ -4,7 +4,7 @@
 
 #include "requester/error_management.hpp"
 
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 
 namespace brain {
 

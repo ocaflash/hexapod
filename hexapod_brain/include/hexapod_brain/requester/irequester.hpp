@@ -7,7 +7,7 @@
 #include <string>
 
 #include "geometry_msgs/msg/twist.hpp"
-#include "oca_interfaces/msg/movement_request.hpp"
+#include "hexapod_interfaces/msg/movement_request.hpp"
 
 namespace brain {
 
@@ -171,16 +171,16 @@ class RequestMovementBody : public RequestBase {
 
 class CRequestMove : public RequestBase {
    public:
-    CRequestMove(oca_interfaces::msg::MovementRequest movementRequest, float minDuration = 0.0)
+    CRequestMove(hexapod_interfaces::msg::MovementRequest movementRequest, float minDuration = 0.0)
         : RequestBase(minDuration), movementRequest_(movementRequest) {
     }
-    oca_interfaces::msg::MovementRequest movementRequest() {
+    hexapod_interfaces::msg::MovementRequest movementRequest() {
         return movementRequest_;
     };
 
    private:
-    oca_interfaces::msg::MovementRequest movementRequest_ =
-        oca_interfaces::msg::MovementRequest();
+    hexapod_interfaces::msg::MovementRequest movementRequest_ =
+        hexapod_interfaces::msg::MovementRequest();
 };
 
 class IRequester {

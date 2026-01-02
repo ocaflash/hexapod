@@ -8,7 +8,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 //
-#include "oca_interfaces/msg/movement_request.hpp"
+#include "hexapod_interfaces/msg/movement_request.hpp"
 #include "requester/kinematics.hpp"
 
 class CRequestBase {

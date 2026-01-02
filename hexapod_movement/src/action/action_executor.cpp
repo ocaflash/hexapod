@@ -4,7 +4,7 @@
 
 #include "action/action_executor.hpp"
 
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 
 CActionExecutor::CActionExecutor(std::shared_ptr<rclcpp::Node> node) : node_(node) {
     handlerServo_ = std::make_shared<CServoHandler>(node);

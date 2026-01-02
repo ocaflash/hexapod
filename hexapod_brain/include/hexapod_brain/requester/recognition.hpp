@@ -11,8 +11,8 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/string.hpp"
 //
-#include "oca_interfaces/msg/joystick_request.hpp"
-#include "oca_interfaces/msg/servo_status.hpp"
+#include "hexapod_interfaces/msg/joystick_request.hpp"
+#include "hexapod_interfaces/msg/servo_status.hpp"
 #include "requester/coordinator.hpp"
 #include "requester/error_management.hpp"
 #include "requester/irequester.hpp"
@@ -26,16 +26,16 @@ class CRecognition {
 
     void onSupplyVoltage(const std_msgs::msg::Float32& msg) const;
     void onSpeechRecognition(const std_msgs::msg::String& msg) const;
-    void onJoystickRequest(const oca_interfaces::msg::JoystickRequest& msg) const;
-    void onServoStatus(const oca_interfaces::msg::ServoStatus& msg) const;
+    void onJoystickRequest(const hexapod_interfaces::msg::JoystickRequest& msg) const;
+    void onServoStatus(const hexapod_interfaces::msg::ServoStatus& msg) const;
 
     void update();
 
    private:
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subSpeechRecognition_;
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr subSupplyVoltage_;
-    rclcpp::Subscription<oca_interfaces::msg::JoystickRequest>::SharedPtr subJoystick_;
-    rclcpp::Subscription<oca_interfaces::msg::ServoStatus>::SharedPtr subServoStatus_;
+    rclcpp::Subscription<hexapod_interfaces::msg::JoystickRequest>::SharedPtr subJoystick_;
+    rclcpp::Subscription<hexapod_interfaces::msg::ServoStatus>::SharedPtr subServoStatus_;
 
     std::shared_ptr<rclcpp::Node> node_;
     std::shared_ptr<CCoordinator> coordinator_;

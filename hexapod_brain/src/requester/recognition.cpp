@@ -16,10 +16,10 @@ CRecognition::CRecognition(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     subSupplyVoltage_ = node_->create_subscription<std_msgs::msg::Float32>(
         "supply_voltage", 10, std::bind(&CRecognition::onSupplyVoltage, this, _1));
 
-    subJoystick_ = node_->create_subscription<oca_interfaces::msg::JoystickRequest>(
+    subJoystick_ = node_->create_subscription<hexapod_interfaces::msg::JoystickRequest>(
         "joystick_request", 10, std::bind(&CRecognition::onJoystickRequest, this, _1));
 
-    subServoStatus_ = node_->create_subscription<oca_interfaces::msg::ServoStatus>(
+    subServoStatus_ = node_->create_subscription<hexapod_interfaces::msg::ServoStatus>(
         "servo_status", 10, std::bind(&CRecognition::onServoStatus, this, _1));
 }
 
@@ -31,11 +31,11 @@ void CRecognition::onSpeechRecognition(const std_msgs::msg::String& msg) const {
     coordinator_->speechRecognized(msg.data);
 }
 
-void CRecognition::onJoystickRequest(const oca_interfaces::msg::JoystickRequest& msg) const {
+void CRecognition::onJoystickRequest(const hexapod_interfaces::msg::JoystickRequest& msg) const {
     coordinator_->joystickRequestReceived(msg);
 }
 
-void CRecognition::onServoStatus(const oca_interfaces::msg::ServoStatus& msg) const {
+void CRecognition::onServoStatus(const hexapod_interfaces::msg::ServoStatus& msg) const {
     coordinator_->servoStatusReceived(msg);
 }
 

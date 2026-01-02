@@ -6,7 +6,7 @@
 
 #include <sstream>
 
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 using namespace std::chrono_literals;
 
 namespace brain {
@@ -53,7 +53,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     uint32_t duration_ms = 0;
     std::string comment = "";
     uint32_t newMovementType = MovementRequest::NO_REQUEST;
-    oca_interfaces::msg::Pose body;
+    hexapod_interfaces::msg::Pose body;
 
     // BUTTONS
     if (msg.button_a) {
@@ -290,7 +290,7 @@ void CCoordinator::requestChat(std::string text, Prio prio) {
 }
 
 void CCoordinator::requestTestBody() {
-    oca_interfaces::msg::Pose body;
+    hexapod_interfaces::msg::Pose body;
     int duration_ms = 2000;
     std::string text = "";
 
@@ -341,7 +341,7 @@ void CCoordinator::requestWaiting(Prio prio) {
 }
 
 void CCoordinator::submitRequestMove(uint32_t movementType, uint32_t duration_ms, std::string comment,
-                                     Prio prio, oca_interfaces::msg::Pose body) {
+                                     Prio prio, hexapod_interfaces::msg::Pose body) {
     std::vector<std::shared_ptr<RequestBase>> request_v;
     if (!comment.empty()) {
         request_v.push_back(std::make_shared<RequestTalking>(comment));

@@ -7,7 +7,7 @@
 #include <rclcpp/create_timer.hpp>
 
 using namespace std::chrono_literals;
-using namespace oca_interfaces::msg;
+using namespace hexapod_interfaces::msg;
 
 CServoHandler::CServoHandler(std::shared_ptr<rclcpp::Node> node) : node_(node) {
     msgServoRequest_.target_angles.at(ServoIndex::HEAD_YAW).name = "HEAD_YAW";
@@ -35,7 +35,7 @@ CServoHandler::CServoHandler(std::shared_ptr<rclcpp::Node> node) : node_(node) {
 
     callbackTimer_ = std::make_unique<CCallbackTimer>();
 
-    pubServoRequest_ = node_->create_publisher<oca_interfaces::msg::ServoRequest>("servo_request", 10);
+    pubServoRequest_ = node_->create_publisher<hexapod_interfaces::msg::ServoRequest>("servo_request", 10);
 }
 
 void CServoHandler::setOnDoneCallback(std::function<void()> cb) {
