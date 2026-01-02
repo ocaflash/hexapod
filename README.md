@@ -65,10 +65,10 @@ OrangePi Zero 2W
 # 1. Clone repository
 mkdir -p ~/hexapod_ws/src
 cd ~/hexapod_ws/src
-git clone https://github.com/YOUR_USERNAME/hexapod_ros2.git
+git clone https://github.com/YOUR_USERNAME/hexapod.git
 
 # 2. Run setup script
-cd hexapod_ros2/scripts
+cd hexapod/scripts
 chmod +x *.sh
 ./setup_workspace.sh
 
