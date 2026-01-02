@@ -7,7 +7,6 @@
 #include <list>
 #include <vector>
 
-#include "handler/communication.hpp"
 #include "handler/ihandler.hpp"
 #include "handler/movement.hpp"
 #include "handler/system.hpp"
@@ -39,7 +38,6 @@ class CActionPlanner {
     std::vector<std::shared_ptr<IHandler>> handlers_;
     bool isDone_ = true;
     std::shared_ptr<CSystem> handlerSystem_;
-    std::shared_ptr<CCommunication> handlerCommunication_;
     std::shared_ptr<CMovement> handlerMovement_;
 };
 
