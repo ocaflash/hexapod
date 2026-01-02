@@ -1,0 +1,45 @@
+node_servo_controller:
+  ros__parameters:
+    # Pololu Mini Maestro 18-Channel on OrangePi Zero 2W
+    # Use /dev/ttyACM0 for USB or /dev/ttyS1 for UART
+    SERIAL_PORT: '/dev/ttyACM0'
+
+    # 18 servos for hexapod (6 legs × 3 joints, no head)
+    SERVO_NAME: ['LEG_RIGHT_FRONT_COXA', 'LEG_RIGHT_FRONT_FEMUR', 'LEG_RIGHT_FRONT_TIBIA',
+                 'LEG_RIGHT_MID_COXA', 'LEG_RIGHT_MID_FEMUR', 'LEG_RIGHT_MID_TIBIA',
+                 'LEG_RIGHT_BACK_COXA', 'LEG_RIGHT_BACK_FEMUR', 'LEG_RIGHT_BACK_TIBIA',
+                 'LEG_LEFT_FRONT_COXA', 'LEG_LEFT_FRONT_FEMUR', 'LEG_LEFT_FRONT_TIBIA',
+                 'LEG_LEFT_MID_COXA', 'LEG_LEFT_MID_FEMUR', 'LEG_LEFT_MID_TIBIA',
+                 'LEG_LEFT_BACK_COXA', 'LEG_LEFT_BACK_FEMUR', 'LEG_LEFT_BACK_TIBIA']
+
+    # Maestro channels 0-17
+    SERVO_CHANNEL: [0, 1, 2,      # LEG_RIGHT_FRONT: COXA, FEMUR, TIBIA
+                    3, 4, 5,      # LEG_RIGHT_MID:   COXA, FEMUR, TIBIA
+                    6, 7, 8,      # LEG_RIGHT_BACK:  COXA, FEMUR, TIBIA
+                    9, 10, 11,    # LEG_LEFT_FRONT:  COXA, FEMUR, TIBIA
+                    12, 13, 14,   # LEG_LEFT_MID:    COXA, FEMUR, TIBIA
+                    15, 16, 17]   # LEG_LEFT_BACK:   COXA, FEMUR, TIBIA
+
+    # Calibration offsets (adjust per servo)
+    SERVO_ADAPTATION_DEG: [0.0, 0.0, 0.0,   # LEG_RIGHT_FRONT
+                           0.0, 0.0, 0.0,   # LEG_RIGHT_MID
+                           0.0, 0.0, 0.0,   # LEG_RIGHT_BACK
+                           0.0, 0.0, 0.0,   # LEG_LEFT_FRONT
+                           0.0, 0.0, 0.0,   # LEG_LEFT_MID
+                           0.0, 0.0, 0.0]   # LEG_LEFT_BACK
+
+    # Mechanical offsets
+    SERVO_OFFSET_DEG: [0.0, 20.0, -3.0,   # LEG_RIGHT_FRONT
+                       0.0, 20.0, -3.0,   # LEG_RIGHT_MID
+                       0.0, 20.0, -3.0,   # LEG_RIGHT_BACK
+                       0.0, 20.0, -3.0,   # LEG_LEFT_FRONT
+                       0.0, 20.0, -3.0,   # LEG_LEFT_MID
+                       0.0, 20.0, -3.0]   # LEG_LEFT_BACK
+
+    # Servo orientation (true = clockwise positive)
+    SERVO_ORIENTATION_CLOCKWISE: [True, True, True,     # LEG_RIGHT_FRONT
+                                  True, True, True,     # LEG_RIGHT_MID
+                                  True, True, True,     # LEG_RIGHT_BACK
+                                  True, False, False,   # LEG_LEFT_FRONT
+                                  True, False, False,   # LEG_LEFT_MID
+                                  True, False, False]   # LEG_LEFT_BACK

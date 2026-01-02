@@ -1,7 +1,0 @@
-launch:
-
-- node:
-    pkg: "oca_lidar"
-    exec: "node_lidar"
-    name: "node_lidar"
-    output: "screen"
