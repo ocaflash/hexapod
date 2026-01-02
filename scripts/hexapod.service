@@ -1,0 +1,20 @@
+[Unit]
+Description=Hexapod ROS2 Robot Service
+After=network.target bluetooth.target
+
+[Service]
+Type=simple
+User=orangepi
+Group=orangepi
+Environment="HOME=/home/orangepi"
+Environment="ROS_DOMAIN_ID=0"
+ExecStartPre=/bin/sleep 5
+ExecStart=/home/orangepi/hexapod_ws/src/hexapod_ros2/scripts/run_hexapod.sh
+ExecStop=/bin/kill -SIGINT $MAINPID
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

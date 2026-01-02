@@ -59,6 +59,38 @@ OrangePi Zero 2W
     └── Bluetooth ──► DualShock 4
 ```
 
+## Installation on OrangePi Zero 2W
+
+```bash
+# 1. Clone repository
+mkdir -p ~/hexapod_ws/src
+cd ~/hexapod_ws/src
+git clone https://github.com/YOUR_USERNAME/hexapod_ros2.git
+
+# 2. Run setup script
+cd hexapod_ros2/scripts
+chmod +x *.sh
+./setup_workspace.sh
+
+# 3. Install as service (optional, for autostart)
+./install_service.sh
+```
+
+## Service Commands
+
+```bash
+sudo systemctl start hexapod     # Start robot
+sudo systemctl stop hexapod      # Stop robot
+sudo systemctl status hexapod    # Check status
+sudo journalctl -u hexapod -f    # View logs
+```
+
+## Update from GitHub
+
+```bash
+~/hexapod_ws/src/hexapod_ros2/scripts/update_and_build.sh
+```
+
 ## License
 
 MIT License
