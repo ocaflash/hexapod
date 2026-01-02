@@ -9,7 +9,7 @@ Group=orangepi
 Environment="HOME=/home/orangepi"
 Environment="ROS_DOMAIN_ID=0"
 ExecStartPre=/bin/sleep 5
-ExecStart=/home/orangepi/hexapod_ws/src/hexapod_ros2/scripts/run_hexapod.sh
+ExecStart=/home/orangepi/hexapod_ws/src/hexapod/scripts/run_hexapod.sh
 ExecStop=/bin/kill -SIGINT $MAINPID
 Restart=on-failure
 RestartSec=10
