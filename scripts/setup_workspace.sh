@@ -6,7 +6,7 @@ set -e
 
 WORKSPACE_DIR="$HOME/hexapod_ws"
 SRC_DIR="$WORKSPACE_DIR/src"
-REPO_URL="https://github.com/YOUR_USERNAME/hexapod_ros2.git"  # TODO: Update with your repo URL
+REPO_URL="https://github.com/ocaflash/hexapod.git"  # TODO: Update with your repo URL
 
 echo "=== Setting up Hexapod ROS2 Workspace ==="
 
