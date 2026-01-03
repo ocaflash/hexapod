@@ -15,7 +15,6 @@
 //
 #include "geometry_msgs/msg/twist.hpp"
 #include "hexapod_interfaces/msg/movement_request.hpp"
-#include "hexapod_interfaces/msg/servo_index.hpp"
 #include "hexapod_interfaces/msg/servo_request.hpp"
 //
 #include "action/action_executor.hpp"
