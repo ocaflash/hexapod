@@ -23,8 +23,9 @@ cd "$SRC_DIR"
 git fetch origin
 git reset --hard origin/main
 
-# Rebuild with single job to reduce CPU load
+# Rebuild: 1 package at a time, 2 compile threads per package
+# OrangePi Zero 2W has 4 cores, this keeps load manageable
 cd "$WORKSPACE_DIR"
-colcon build --symlink-install --parallel-workers 1 --executor sequential
+MAKEFLAGS="-j2" colcon build --symlink-install --parallel-workers 1
 
 echo "=== Update complete ==="
