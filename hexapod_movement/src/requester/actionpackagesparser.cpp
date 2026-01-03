@@ -36,11 +36,7 @@ void CActionPackagesParser::readJson() {
         }
         actionPackages_[key] = actionPackage;
     }
-    RCLCPP_INFO_STREAM(node_->get_logger(), "Loaded " << actionPackages_.size() << " action packages.");
-    RCLCPP_INFO_STREAM(node_->get_logger(), "keys:");
-    for (const auto& [key, _] : actionPackages_) {
-        RCLCPP_INFO_STREAM(node_->get_logger(), " - " << key);
-    }
+    RCLCPP_DEBUG_STREAM(node_->get_logger(), "Loaded " << actionPackages_.size() << " action packages.");
 }
 
 void CActionPackagesParser::parseStep(const json& step, std::vector<CActionPackage>& actionPackage) {
