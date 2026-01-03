@@ -42,10 +42,6 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
 }
 
 void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
-    uint32_t duration_ms = 0;
-    uint32_t newMovementType = MovementRequest::NO_REQUEST;
-    hexapod_interfaces::msg::Pose body;
-
     // Edge detection for buttons (react only on press, not hold)
     bool buttonStartPressed = msg.button_start && !prevButtonStart_;
     bool buttonSelectPressed = msg.button_select && !prevButtonSelect_;
@@ -57,6 +53,15 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     prevButtonSelect_ = msg.button_select;
     prevDpadUp_ = (msg.dpad_vertical == 1);
     prevDpadDown_ = (msg.dpad_vertical == -1);
+
+    // Ignore all input while locked (during stand up/lay down transitions)
+    if (isNewMoveRequestLocked_) {
+        return;
+    }
+
+    uint32_t duration_ms = 0;
+    uint32_t newMovementType = MovementRequest::NO_REQUEST;
+    hexapod_interfaces::msg::Pose body;
 
     // SHARE button - shutdown (edge detection)
     if (buttonSelectPressed) {
@@ -255,21 +260,26 @@ void CCoordinator::submitRequestMove(uint32_t movementType, uint32_t duration_ms
 
     actualMovementType_ = movementType;
 
-    // Update standing state
-    if (movementType == MovementRequest::LAYDOWN || movementType == MovementRequest::TRANSPORT) {
-        isStanding_ = false;
-    } else if (movementType == MovementRequest::STAND_UP) {
-        isStanding_ = true;
-    }
-
     // Lock requests except for continuous MOVE
     if (MovementRequest::MOVE == movementType) {
         return;
     }
     isNewMoveRequestLocked_ = true;
-    timerMovementRequest_->waitMsNonBlocking(duration_ms, [this]() {
+    
+    // Capture movementType for the lambda
+    uint32_t capturedType = movementType;
+    timerMovementRequest_->waitMsNonBlocking(duration_ms, [this, capturedType]() {
         isNewMoveRequestLocked_ = false;
         actualMovementType_ = MovementRequest::NO_REQUEST;
+        
+        // Update standing state AFTER movement completes
+        if (capturedType == MovementRequest::LAYDOWN || capturedType == MovementRequest::TRANSPORT) {
+            isStanding_ = false;
+            RCLCPP_INFO(node_->get_logger(), "Robot is now laying down");
+        } else if (capturedType == MovementRequest::STAND_UP) {
+            isStanding_ = true;
+            RCLCPP_INFO(node_->get_logger(), "Robot is now standing");
+        }
     });
 }
 
