@@ -71,15 +71,12 @@ CKinematics::CKinematics(std::shared_ptr<rclcpp::Node> node) : node_(node) {
         bodyCenterOffsets_[legIndex].psi = OFFSET_COXA_ANGLE_DEG.at(i);
     }
 
-    // Leg cootdinate system
+    // Leg coordinate system
     //            ^ x
     //       y <- |
     // z up -> +
-    RCLCPP_INFO_STREAM(node_->get_logger(), "intialize legs current values");
     intializeLegs(legs_, INIT_FOOT_POS_X, INIT_FOOT_POS_Y, INIT_FOOT_POS_Z);
-    RCLCPP_INFO_STREAM(node_->get_logger(), "intialize legs for standing position");
     intializeLegs(legsStanding_, STANDING_FOOT_POS_X, STANDING_FOOT_POS_Y, STANDING_FOOT_POS_Z);
-    RCLCPP_INFO_STREAM(node_->get_logger(), "intialize legs for laydown position");
     intializeLegs(legsLayDown_, LAYDOWN_FOOT_POS_X, LAYDOWN_FOOT_POS_Y, LAYDOWN_FOOT_POS_Z);
 
     body_.position.x = 0.0;
@@ -103,16 +100,6 @@ void CKinematics::intializeLegs(std::map<ELegIndex, CLeg>& legs, std::vector<dou
 
         // calc the legs[legIndex].angles_
         calcLegInverseKinematics(legs[legIndex].footPos_, legs[legIndex], legIndex);
-
-        RCLCPP_INFO_STREAM(node_->get_logger(),
-                           legIndexToName.at(legIndex)
-                               << ": \tag: " << std::fixed << std::setprecision(0) << std::setw(3)
-                               << legs[legIndex].angles_.degCoxa << "°, " << std::setw(3)
-                               << legs[legIndex].angles_.degFemur << "°, " << std::setw(3)
-                               << legs[legIndex].angles_.degTibia << "°\t| x: " << std::fixed
-                               << std::setprecision(2) << std::setw(3) << legs[legIndex].footPos_.x
-                               << ", y: " << std::setw(3) << legs[legIndex].footPos_.y
-                               << ", z: " << std::setw(3) << legs[legIndex].footPos_.z);
     }
 }
 
@@ -125,15 +112,6 @@ void CKinematics::moveBody(const std::map<ELegIndex, CPosition>& footTargets, co
         CPosition legBase = rotate(coxaPosition, body.orientation) + body.position;
         CPosition footRel = footTarget - legBase;
         calcLegInverseKinematics(footRel, leg, legIndex);
-
-        RCLCPP_INFO_STREAM(node_->get_logger(),
-                           legIndexToName.at(legIndex)
-                               << ": \tag: " << std::fixed << std::setprecision(0) << std::setw(3)
-                               << leg.angles_.degCoxa << "°, " << std::setw(3) << leg.angles_.degFemur
-                               << "°, " << std::setw(3) << leg.angles_.degTibia << "°\t| x: " << std::fixed
-                               << std::setprecision(2) << std::setw(3) << leg.footPos_.x
-                               << ", y: " << std::setw(3) << leg.footPos_.y << ", z: " << std::setw(3)
-                               << leg.footPos_.z);
     }
 }
 
@@ -234,43 +212,15 @@ void CKinematics::calcLegForwardKinematics(const CLegAngles target, CLeg& leg) {
 
 CLeg& CKinematics::setCartesianFeet(const ELegIndex legIndex, const CPosition& targetFeetPos) {
     auto& leg = getLegs().at(legIndex);
-
     calcLegInverseKinematics(targetFeetPos, leg, legIndex);
-
-    RCLCPP_INFO_STREAM(node_->get_logger(), "CKinematics::setCartesianFeet "
-                                                << legIndexToName.at(legIndex) << ", x: " << std::fixed
-                                                << std::setprecision(2) << leg.footPos_.x
-                                                << ", y: " << leg.footPos_.y << ", z: " << leg.footPos_.z);
-    RCLCPP_INFO_STREAM(node_->get_logger(),
-                       "CKinematics:: results to: " << legIndexToName.at(legIndex) << ", coxa: " << std::fixed
-                                                    << std::setprecision(2) << leg.angles_.degCoxa
-                                                    << ", femur: " << leg.angles_.degFemur
-                                                    << ", tibia: " << leg.angles_.degTibia);
-
     return leg;
 }
 
 void CKinematics::setLegAngles(const ELegIndex index, const CLegAngles& angles) {
     auto& leg = legs_.at(index);
-
-    RCLCPP_INFO_STREAM(node_->get_logger(), legIndexToName.at(index)
-                                                << " before " << std::fixed << std::setprecision(2)
-                                                << ":\tag: " << leg.angles_.degCoxa << "°, "
-                                                << leg.angles_.degFemur << "°, " << leg.angles_.degTibia
-                                                << "°\t| x: " << leg.footPos_.x << ", y: " << leg.footPos_.y
-                                                << ", z: " << leg.footPos_.z);
-
     calcLegForwardKinematics(angles, leg);
-    // leg.angles_.degCoxa += bodyCenterOffsets_[index].psi;   // guess this is wrong?!!
     leg.footPos_.x += bodyCenterOffsets_[index].x;
     leg.footPos_.y += bodyCenterOffsets_[index].y;
-
-    RCLCPP_INFO_STREAM(node_->get_logger(), legIndexToName.at(index)
-                                                << " after " << std::fixed << std::setprecision(2)
-                                                << ":\tag: " << leg.angles_.degCoxa << "°, "
-                                                << leg.angles_.degFemur << "°, " << leg.angles_.degTibia
-                                                << "°\t| x: " << leg.footPos_.x << ", y: " << leg.footPos_.y
-                                                << ", z: " << leg.footPos_.z);
 }
 
 CPose& CKinematics::getBody() {

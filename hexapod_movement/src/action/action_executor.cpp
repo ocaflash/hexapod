@@ -13,7 +13,6 @@ CActionExecutor::CActionExecutor(std::shared_ptr<rclcpp::Node> node) : node_(nod
 }
 
 void CActionExecutor::onServoHandlerDone() {
-    RCLCPP_INFO_STREAM(node_->get_logger(), "CActionExecutor:: Received callback: Servo action is done.");
     executeNextPendingRequest();
 }
 

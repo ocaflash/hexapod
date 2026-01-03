@@ -26,11 +26,7 @@ void CRequester::initializeRequestHandlers() {
     auto bind = [this](auto fn) { return [this, fn](const MovementRequest& msg) { (this->*fn)(msg); }; };
 
     requestHandlers_ = {
-        {MovementRequest::NO_REQUEST,
-         [this](const MovementRequest& msg) {
-             RCLCPP_INFO_STREAM(node_->get_logger(),
-                                "CRequester::onMovementRequest: NO_REQUEST: " << msg.name);
-         }},
+        {MovementRequest::NO_REQUEST, [](const MovementRequest&) {}},
         {MovementRequest::LAYDOWN, bind(&CRequester::requestLayDown)},
         {MovementRequest::STAND_UP, bind(&CRequester::requestStandUp)},
         {MovementRequest::WAITING, bind(&CRequester::requestWaiting)},
@@ -367,7 +363,6 @@ void CRequester::requestTestLegs(const MovementRequest& msg) {
 // public methods for the CRequester class
 // ------------------------------------------------------------------------------------------------------------
 void CRequester::onMovementRequest(const MovementRequest& msg) {
-    RCLCPP_INFO_STREAM(node_->get_logger(), "CRequester::onMovementRequest: " << msg.name);
     // check that the new request is inside the requestHandlers_ map
     if (requestHandlers_.find(msg.type) == requestHandlers_.end()) {
         RCLCPP_ERROR_STREAM(node_->get_logger(),
@@ -386,7 +381,6 @@ void CRequester::update(std::chrono::milliseconds timeslice) {
     // if the movement request is active and we are in the transition to movement
     if (transitionToMoveActive_) {
         if (actionExecutor_->isDone()) {
-            RCLCPP_INFO_STREAM(node_->get_logger(), "CRequester::transition to Movement done");
             gaitController_->setPhaseNeutral();
             transitionToMoveActive_ = false;
         }
