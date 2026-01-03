@@ -1,8 +1,8 @@
 node_servo_controller:
   ros__parameters:
     # Pololu Mini Maestro 18-Channel on OrangePi Zero 2W
-    # Use /dev/ttyACM0 for USB or /dev/ttyS1 for UART
-    SERIAL_PORT: '/dev/ttyACM0'
+    # UART5 on OrangePi Zero 2W
+    SERIAL_PORT: '/dev/ttyS5'
 
     # 18 servos for hexapod (6 legs × 3 joints, no head)
     SERVO_NAME: ['LEG_RIGHT_FRONT_COXA', 'LEG_RIGHT_FRONT_FEMUR', 'LEG_RIGHT_FRONT_TIBIA',
