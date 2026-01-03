@@ -27,6 +27,19 @@ if [ -z "$ROS_SETUP" ]; then
     exit 1
 fi
 
+# Restart Mini Maestro script before starting
+# Send "Restart Script" command (0xA7) followed by subroutine 0
+MAESTRO_PORT="/dev/ttyS5"
+if [ -e "$MAESTRO_PORT" ]; then
+    echo "Restarting Mini Maestro on $MAESTRO_PORT..."
+    stty -F "$MAESTRO_PORT" 9600 cs8 -cstopb -parenb raw -echo
+    printf '\xA7\x00' > "$MAESTRO_PORT"
+    sleep 0.5
+    echo "Maestro restart complete"
+else
+    echo "WARNING: Maestro port $MAESTRO_PORT not found"
+fi
+
 # Source ROS2 environment
 source "$ROS_SETUP"
 source "$WORKSPACE_DIR/install/local_setup.bash"
