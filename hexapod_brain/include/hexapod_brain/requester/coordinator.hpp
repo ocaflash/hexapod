@@ -73,6 +73,12 @@ class CCoordinator : public IRequester {
     bool prevButtonSelect_ = false;
     bool prevDpadUp_ = false;
     bool prevDpadDown_ = false;
+    bool prevButtonA_ = false;
+    bool prevButtonB_ = false;
+    bool prevButtonX_ = false;
+    bool prevButtonY_ = false;
+    bool prevButtonL1_ = false;
+    bool prevButtonR1_ = false;
 
     geometry_msgs::msg::Twist actualVelocity_ = geometry_msgs::msg::Twist();
     uint32_t actualMovementType_ = hexapod_interfaces::msg::MovementRequest::NO_REQUEST;

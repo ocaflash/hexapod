@@ -47,14 +47,26 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     bool buttonSelectPressed = msg.button_select && !prevButtonSelect_;
     bool dpadUpPressed = (msg.dpad_vertical == 1) && !prevDpadUp_;
     bool dpadDownPressed = (msg.dpad_vertical == -1) && !prevDpadDown_;
+    bool buttonAPressed = msg.button_a && !prevButtonA_;
+    bool buttonBPressed = msg.button_b && !prevButtonB_;
+    bool buttonXPressed = msg.button_x && !prevButtonX_;
+    bool buttonYPressed = msg.button_y && !prevButtonY_;
+    bool buttonL1Pressed = msg.button_l1 && !prevButtonL1_;
+    bool buttonR1Pressed = msg.button_r1 && !prevButtonR1_;
 
     // Update previous button states
     prevButtonStart_ = msg.button_start;
     prevButtonSelect_ = msg.button_select;
     prevDpadUp_ = (msg.dpad_vertical == 1);
     prevDpadDown_ = (msg.dpad_vertical == -1);
+    prevButtonA_ = msg.button_a;
+    prevButtonB_ = msg.button_b;
+    prevButtonX_ = msg.button_x;
+    prevButtonY_ = msg.button_y;
+    prevButtonL1_ = msg.button_l1;
+    prevButtonR1_ = msg.button_r1;
 
-    // Ignore all input while locked (during stand up/lay down transitions)
+    // Ignore all input while locked (during transitions)
     if (isNewMoveRequestLocked_) {
         return;
     }
@@ -63,64 +75,112 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     uint32_t newMovementType = MovementRequest::NO_REQUEST;
     hexapod_interfaces::msg::Pose body;
 
-    // SHARE button - shutdown (edge detection)
+    // === SYSTEM BUTTONS (always active) ===
+    
+    // SHARE button - shutdown
     if (buttonSelectPressed) {
         requestShutdown(Prio::High);
         return;
     }
 
-    // OPTIONS button (button_start) - Stand up / Lay down toggle (edge detection)
+    // OPTIONS button - Stand up / Lay down toggle
     if (buttonStartPressed) {
         if (!isStanding_) {
             newMovementType = MovementRequest::STAND_UP;
-            duration_ms = 3000;
-            RCLCPP_INFO(node_->get_logger(), "OPTIONS pressed: Standing up...");
+            duration_ms = 2000;
+            RCLCPP_INFO(node_->get_logger(), "OPTIONS: Standing up...");
+            isStanding_ = true;  // Set immediately to prevent re-trigger
         } else {
             newMovementType = MovementRequest::LAYDOWN;
-            duration_ms = 3000;
-            RCLCPP_INFO(node_->get_logger(), "OPTIONS pressed: Laying down...");
+            duration_ms = 2000;
+            RCLCPP_INFO(node_->get_logger(), "OPTIONS: Laying down...");
+            isStanding_ = false;  // Set immediately to prevent re-trigger
         }
         submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         return;
     }
-    
-    // DPAD UP - Stand up (edge detection)
-    if (dpadUpPressed && !isStanding_) {
-        newMovementType = MovementRequest::STAND_UP;
-        duration_ms = 3000;
-        RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
-        return;
-    }
-    // DPAD DOWN - Lay down (edge detection)
-    if (dpadDownPressed && isStanding_) {
-        newMovementType = MovementRequest::LAYDOWN;
-        duration_ms = 3000;
-        RCLCPP_INFO(node_->get_logger(), "DPAD DOWN: Laying down...");
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
-        return;
-    }
 
-    // Not standing - ignore all other input
+    // === NOT STANDING - only allow stand up ===
     if (!isStanding_) {
+        // DPAD UP - Stand up (alternative)
+        if (dpadUpPressed) {
+            newMovementType = MovementRequest::STAND_UP;
+            duration_ms = 2000;
+            RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
+            isStanding_ = true;
+            submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        }
         return;
     }
 
-    // BUTTONS (only when standing)
-    if (msg.button_a) {
-        newMovementType = MovementRequest::WATCH;
-        duration_ms = 5000;
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
-        return;
-    }
-    if (msg.button_b) {
-        newMovementType = MovementRequest::HIGH_FIVE;
-        duration_ms = 5000;
+    // === STANDING - process all inputs ===
+
+    // DPAD DOWN - Lay down
+    if (dpadDownPressed) {
+        newMovementType = MovementRequest::LAYDOWN;
+        duration_ms = 2000;
+        RCLCPP_INFO(node_->get_logger(), "DPAD DOWN: Laying down...");
+        isStanding_ = false;
         submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         return;
     }
 
-    // LEFT STICK - linear movement
+    // === ACTION BUTTONS (DualShock mapping) ===
+    // X (button_a) - Watch/Look around
+    if (buttonAPressed) {
+        RCLCPP_INFO(node_->get_logger(), "X button: Watch");
+        submitRequestMove(MovementRequest::WATCH, 3000, "", Prio::High);
+        return;
+    }
+
+    // Circle (button_b) - High Five
+    if (buttonBPressed) {
+        RCLCPP_INFO(node_->get_logger(), "Circle button: High Five");
+        submitRequestMove(MovementRequest::HIGH_FIVE, 3000, "", Prio::High);
+        return;
+    }
+
+    // Square (button_x) - Dance/Body Roll
+    if (buttonXPressed) {
+        RCLCPP_INFO(node_->get_logger(), "Square button: Body Roll");
+        submitRequestMove(MovementRequest::BODY_ROLL, 3000, "", Prio::High);
+        return;
+    }
+
+    // Triangle (button_y) - Clap
+    if (buttonYPressed) {
+        RCLCPP_INFO(node_->get_logger(), "Triangle button: Clap");
+        submitRequestMove(MovementRequest::CLAP, 3000, "", Prio::High);
+        return;
+    }
+
+    // L1 - Look Left
+    if (buttonL1Pressed) {
+        RCLCPP_INFO(node_->get_logger(), "L1 button: Look Left");
+        submitRequestMove(MovementRequest::LOOK_LEFT, 2000, "", Prio::High);
+        return;
+    }
+
+    // R1 - Look Right
+    if (buttonR1Pressed) {
+        RCLCPP_INFO(node_->get_logger(), "R1 button: Look Right");
+        submitRequestMove(MovementRequest::LOOK_RIGHT, 2000, "", Prio::High);
+        return;
+    }
+
+    // DPAD LEFT/RIGHT - could be used for side stepping or rotation
+    if (msg.dpad_horizontal == -1) {
+        // DPAD LEFT - Stomp left
+        // Could add action here
+    }
+    if (msg.dpad_horizontal == 1) {
+        // DPAD RIGHT - Stomp right
+        // Could add action here
+    }
+
+    // === ANALOG STICKS - Movement ===
+    
+    // LEFT STICK - linear movement (forward/back, strafe)
     bool hasLinearInput = false;
     if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
         actualVelocity_.linear.x = -msg.left_stick_vertical * param_velocity_factor_linear_;
@@ -136,7 +196,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         actualVelocity_.linear.y = 0.0;
     }
 
-    // RIGHT STICK - rotation
+    // RIGHT STICK horizontal - rotation (turn left/right)
     bool hasRotationInput = false;
     if (std::abs(msg.right_stick_horizontal) > param_joystick_deadzone_) {
         actualVelocity_.angular.z = msg.right_stick_horizontal * param_velocity_factor_rotation_;
@@ -145,24 +205,20 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         actualVelocity_.angular.z = 0.0;
     }
 
-    // Body height control
+    // RIGHT STICK vertical - body height
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
-        hasLinearInput = true;
     }
 
-    // Set MOVE only if there is actual stick input
+    // MOVE only if there is actual stick input
     if (hasLinearInput || hasRotationInput) {
-        newMovementType = MovementRequest::MOVE;
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High, body);
+        submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
     // Stop moving when sticks released (transition from MOVE to standing)
     if (actualMovementType_ == MovementRequest::MOVE) {
-        newMovementType = MovementRequest::MOVE_TO_STAND;
-        duration_ms = 500;
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
         return;
     }
 }
@@ -265,22 +321,12 @@ void CCoordinator::submitRequestMove(uint32_t movementType, uint32_t duration_ms
     if (MovementRequest::MOVE == movementType) {
         return;
     }
-    isNewMoveRequestLocked_ = true;
     
-    // Capture movementType for the lambda
-    uint32_t capturedType = movementType;
-    timerMovementRequest_->waitMsNonBlocking(duration_ms, [this, capturedType]() {
+    // Lock input during action
+    isNewMoveRequestLocked_ = true;
+    timerMovementRequest_->waitMsNonBlocking(duration_ms, [this]() {
         isNewMoveRequestLocked_ = false;
         actualMovementType_ = MovementRequest::NO_REQUEST;
-        
-        // Update standing state AFTER movement completes
-        if (capturedType == MovementRequest::LAYDOWN || capturedType == MovementRequest::TRANSPORT) {
-            isStanding_ = false;
-            RCLCPP_INFO(node_->get_logger(), "Robot is now laying down");
-        } else if (capturedType == MovementRequest::STAND_UP) {
-            isStanding_ = true;
-            RCLCPP_INFO(node_->get_logger(), "Robot is now standing");
-        }
     });
 }
 

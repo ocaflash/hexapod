@@ -60,10 +60,12 @@ ServoController::ServoController(std::shared_ptr<rclcpp::Node> node) : node_(nod
     // Send Go Home command to reset servos
     protocol_->goHome();
 
-    // Set default speed and acceleration for smooth movement
+    // Set speed and acceleration for smooth movement
+    // Speed: 0 = unlimited, higher = slower (units of 0.25μs/10ms)
+    // Acceleration: 0 = unlimited, higher = slower (units of 0.25μs/10ms/80ms)
     for (auto& [idx, servo] : servos_) {
-        protocol_->setSpeed(servo.getChannel(), 0);      // unlimited speed
-        protocol_->setAcceleration(servo.getChannel(), 0); // unlimited acceleration
+        protocol_->setSpeed(servo.getChannel(), 30);       // Smooth speed
+        protocol_->setAcceleration(servo.getChannel(), 5); // Smooth acceleration
     }
 
     subServoRequest_ = node_->create_subscription<ServoRequest>(
