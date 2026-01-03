@@ -42,7 +42,7 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
 }
 
 void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
-    // BUTTON SELECT - shutdown
+    // SHARE button - shutdown
     if (msg.button_select) {
         requestShutdown(Prio::High);
         return;
@@ -52,17 +52,37 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     uint32_t newMovementType = MovementRequest::NO_REQUEST;
     hexapod_interfaces::msg::Pose body;
 
-    // DPAD UP - Stand up (only when laying down)
+    // OPTIONS button (button_start) - Stand up / Lay down toggle
+    if (msg.button_start) {
+        if (!isStanding_) {
+            newMovementType = MovementRequest::STAND_UP;
+            duration_ms = 3000;
+            RCLCPP_INFO(node_->get_logger(), "OPTIONS pressed: Standing up...");
+        } else {
+            newMovementType = MovementRequest::LAYDOWN;
+            duration_ms = 3000;
+            RCLCPP_INFO(node_->get_logger(), "OPTIONS pressed: Laying down...");
+        }
+        // Return early to prevent other processing
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
+    }
+    
+    // DPAD UP - Stand up (alternative)
     if (msg.dpad_vertical == 1 && !isStanding_) {
         newMovementType = MovementRequest::STAND_UP;
         duration_ms = 3000;
-        RCLCPP_INFO(node_->get_logger(), "Standing up...");
+        RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
     }
-    // DPAD DOWN - Lay down (only when standing)
-    else if (msg.dpad_vertical == -1 && isStanding_) {
+    // DPAD DOWN - Lay down (alternative)
+    if (msg.dpad_vertical == -1 && isStanding_) {
         newMovementType = MovementRequest::LAYDOWN;
         duration_ms = 3000;
-        RCLCPP_INFO(node_->get_logger(), "Laying down...");
+        RCLCPP_INFO(node_->get_logger(), "DPAD DOWN: Laying down...");
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
     }
 
     // Only process movement commands if standing
@@ -74,9 +94,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         } else if (msg.button_b) {
             newMovementType = MovementRequest::HIGH_FIVE;
             duration_ms = 5000;
-        } else if (msg.button_start) {
-            newMovementType = MovementRequest::TRANSPORT;
-            duration_ms = 3000;
         }
 
         // LEFT STICK - linear movement
