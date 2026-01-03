@@ -23,8 +23,8 @@ cd "$SRC_DIR"
 git fetch origin
 git reset --hard origin/main
 
-# Rebuild
+# Rebuild with single job to reduce CPU load
 cd "$WORKSPACE_DIR"
-colcon build --symlink-install
+colcon build --symlink-install --parallel-workers 1 --executor sequential
 
 echo "=== Update complete ==="

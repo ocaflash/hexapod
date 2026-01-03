@@ -53,10 +53,10 @@ sudo apt install -y \
 
 rosdep install --from-paths src --ignore-src -r -y || true
 
-# Build workspace
+# Build workspace (single job to reduce CPU/memory load on OrangePi)
 echo "Building workspace..."
 cd "$WORKSPACE_DIR"
-colcon build --symlink-install
+colcon build --symlink-install --parallel-workers 1 --executor sequential
 
 # Add to bashrc if not already present
 if ! grep -q "hexapod_ws" ~/.bashrc; then
