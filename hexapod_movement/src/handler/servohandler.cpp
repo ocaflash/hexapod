@@ -9,29 +9,38 @@
 using namespace std::chrono_literals;
 using namespace hexapod_interfaces::msg;
 
+// Servo indices for 18 servos (no head)
+// Layout: RightFront(0-2), RightMid(3-5), RightBack(6-8), LeftFront(9-11), LeftMid(12-14), LeftBack(15-17)
+enum ServoIdx {
+    LEG_RIGHT_FRONT_COXA = 0, LEG_RIGHT_FRONT_FEMUR, LEG_RIGHT_FRONT_TIBIA,
+    LEG_RIGHT_MID_COXA, LEG_RIGHT_MID_FEMUR, LEG_RIGHT_MID_TIBIA,
+    LEG_RIGHT_BACK_COXA, LEG_RIGHT_BACK_FEMUR, LEG_RIGHT_BACK_TIBIA,
+    LEG_LEFT_FRONT_COXA, LEG_LEFT_FRONT_FEMUR, LEG_LEFT_FRONT_TIBIA,
+    LEG_LEFT_MID_COXA, LEG_LEFT_MID_FEMUR, LEG_LEFT_MID_TIBIA,
+    LEG_LEFT_BACK_COXA, LEG_LEFT_BACK_FEMUR, LEG_LEFT_BACK_TIBIA
+};
+
 CServoHandler::CServoHandler(std::shared_ptr<rclcpp::Node> node) : node_(node) {
-    msgServoRequest_.target_angles.at(ServoIndex::HEAD_YAW).name = "HEAD_YAW";
-    msgServoRequest_.target_angles.at(ServoIndex::HEAD_PITCH).name = "HEAD_PITCH";
+    // Initialize servo names
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_COXA).name = "LEG_RIGHT_FRONT_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_FEMUR).name = "LEG_RIGHT_FRONT_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_TIBIA).name = "LEG_RIGHT_FRONT_TIBIA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_COXA).name = "LEG_RIGHT_MID_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_FEMUR).name = "LEG_RIGHT_MID_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_TIBIA).name = "LEG_RIGHT_MID_TIBIA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_COXA).name = "LEG_RIGHT_BACK_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_FEMUR).name = "LEG_RIGHT_BACK_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_TIBIA).name = "LEG_RIGHT_BACK_TIBIA";
 
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_COXA).name = "LEG_LEFT_FRONT_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_FEMUR).name = "LEG_LEFT_FRONT_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_TIBIA).name = "LEG_LEFT_FRONT_TIBIA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_COXA).name = "LEG_LEFT_MID_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_FEMUR).name = "LEG_LEFT_MID_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_TIBIA).name = "LEG_LEFT_MID_TIBIA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_COXA).name = "LEG_LEFT_BACK_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_FEMUR).name = "LEG_LEFT_BACK_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_TIBIA).name = "LEG_LEFT_BACK_TIBIA";
-
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_COXA).name = "LEG_RIGHT_FRONT_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_FEMUR).name = "LEG_RIGHT_FRONT_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_TIBIA).name = "LEG_RIGHT_FRONT_TIBIA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_COXA).name = "LEG_RIGHT_MID_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_FEMUR).name = "LEG_RIGHT_MID_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_TIBIA).name = "LEG_RIGHT_MID_TIBIA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_COXA).name = "LEG_RIGHT_BACK_COXA";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_FEMUR).name = "LEG_RIGHT_BACK_FEMUR";
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_TIBIA).name = "LEG_RIGHT_BACK_TIBIA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_COXA).name = "LEG_LEFT_FRONT_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_FEMUR).name = "LEG_LEFT_FRONT_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_TIBIA).name = "LEG_LEFT_FRONT_TIBIA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_COXA).name = "LEG_LEFT_MID_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_FEMUR).name = "LEG_LEFT_MID_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_TIBIA).name = "LEG_LEFT_MID_TIBIA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_COXA).name = "LEG_LEFT_BACK_COXA";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_FEMUR).name = "LEG_LEFT_BACK_FEMUR";
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_TIBIA).name = "LEG_LEFT_BACK_TIBIA";
 
     callbackTimer_ = std::make_unique<CCallbackTimer>();
 
@@ -43,9 +52,6 @@ void CServoHandler::setOnDoneCallback(std::function<void()> cb) {
 }
 
 void CServoHandler::run(std::shared_ptr<CRequestSendDuration> request) {
-    // RCLCPP_INFO_STREAM(node_->get_logger(),
-    //                    "CServoHandler::run | CRequestSendDuration for " << request->durationMs() << "ms");
-
     msgServoRequest_.header.stamp = node_->now();
     msgServoRequest_.time_to_reach_target_angles_ms = request->durationMs();
     pubServoRequest_->publish(msgServoRequest_);
@@ -56,120 +62,92 @@ void CServoHandler::run(std::shared_ptr<CRequestSendDuration> request) {
 }
 
 void CServoHandler::run(std::shared_ptr<CRequestLegs> request) {
-    // RCLCPP_INFO_STREAM(node_->get_logger(), "CServoHandler::run | CRequestLegs");
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_COXA).angle_deg =
-        request->angles().at(ELegIndex::LeftFront).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_FEMUR).angle_deg =
-        request->angles().at(ELegIndex::LeftFront).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_TIBIA).angle_deg =
-        request->angles().at(ELegIndex::LeftFront).degTibia;
-
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_COXA).angle_deg =
-        request->angles().at(ELegIndex::LeftMid).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_FEMUR).angle_deg =
-        request->angles().at(ELegIndex::LeftMid).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_TIBIA).angle_deg =
-        request->angles().at(ELegIndex::LeftMid).degTibia;
-
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_COXA).angle_deg =
-        request->angles().at(ELegIndex::LeftBack).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_FEMUR).angle_deg =
-        request->angles().at(ELegIndex::LeftBack).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_TIBIA).angle_deg =
-        request->angles().at(ELegIndex::LeftBack).degTibia;
-
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_COXA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_COXA).angle_deg =
         request->angles().at(ELegIndex::RightFront).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_FEMUR).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_FEMUR).angle_deg =
         request->angles().at(ELegIndex::RightFront).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_TIBIA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_TIBIA).angle_deg =
         request->angles().at(ELegIndex::RightFront).degTibia;
 
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_COXA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_COXA).angle_deg =
         request->angles().at(ELegIndex::RightMid).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_FEMUR).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_FEMUR).angle_deg =
         request->angles().at(ELegIndex::RightMid).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_TIBIA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_TIBIA).angle_deg =
         request->angles().at(ELegIndex::RightMid).degTibia;
 
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_COXA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_COXA).angle_deg =
         request->angles().at(ELegIndex::RightBack).degCoxa;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_FEMUR).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_FEMUR).angle_deg =
         request->angles().at(ELegIndex::RightBack).degFemur;
-    msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_TIBIA).angle_deg =
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_TIBIA).angle_deg =
         request->angles().at(ELegIndex::RightBack).degTibia;
+
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_COXA).angle_deg =
+        request->angles().at(ELegIndex::LeftFront).degCoxa;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_FEMUR).angle_deg =
+        request->angles().at(ELegIndex::LeftFront).degFemur;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_TIBIA).angle_deg =
+        request->angles().at(ELegIndex::LeftFront).degTibia;
+
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_COXA).angle_deg =
+        request->angles().at(ELegIndex::LeftMid).degCoxa;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_FEMUR).angle_deg =
+        request->angles().at(ELegIndex::LeftMid).degFemur;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_TIBIA).angle_deg =
+        request->angles().at(ELegIndex::LeftMid).degTibia;
+
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_COXA).angle_deg =
+        request->angles().at(ELegIndex::LeftBack).degCoxa;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_FEMUR).angle_deg =
+        request->angles().at(ELegIndex::LeftBack).degFemur;
+    msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_TIBIA).angle_deg =
+        request->angles().at(ELegIndex::LeftBack).degTibia;
 }
 
 void CServoHandler::run(std::shared_ptr<CRequestLeg> request) {
-    // RCLCPP_INFO_STREAM(node_->get_logger(), "CServoHandler::run | CRequestLeg");
     switch (request->legIndex()) {
-        case ELegIndex::RightFront: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_FRONT_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::RightFront:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_FRONT_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
-        case ELegIndex::RightMid: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_MID_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::RightMid:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_MID_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
-        case ELegIndex::RightBack: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_RIGHT_BACK_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::RightBack:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_RIGHT_BACK_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
-        case ELegIndex::LeftFront: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_FRONT_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::LeftFront:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_FRONT_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
-        case ELegIndex::LeftMid: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_MID_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::LeftMid:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_MID_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
-        case ELegIndex::LeftBack: {
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_COXA).angle_deg =
-                request->angles().degCoxa;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_FEMUR).angle_deg =
-                request->angles().degFemur;
-            msgServoRequest_.target_angles.at(ServoIndex::LEG_LEFT_BACK_TIBIA).angle_deg =
-                request->angles().degTibia;
+        case ELegIndex::LeftBack:
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_COXA).angle_deg = request->angles().degCoxa;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_FEMUR).angle_deg = request->angles().degFemur;
+            msgServoRequest_.target_angles.at(ServoIdx::LEG_LEFT_BACK_TIBIA).angle_deg = request->angles().degTibia;
             break;
-        }
         default:
             break;
     }
 }
 
 void CServoHandler::run(std::shared_ptr<CRequestHead> request) {
-    // RCLCPP_INFO_STREAM(node_->get_logger(), "CServoHandler::run | CRequestHead");
-    msgServoRequest_.target_angles.at(ServoIndex::HEAD_YAW).angle_deg = request->angleHorizontal();
-    msgServoRequest_.target_angles.at(ServoIndex::HEAD_PITCH).angle_deg = request->angleVertical();
+    // Head removed - no operation
+    (void)request;
 }
 
 void CServoHandler::timerCallback() {
-    // RCLCPP_INFO_STREAM(node_->get_logger(), "CServoHandler::timerCallback");
     if (doneCallback_) {
         doneCallback_();
     }
