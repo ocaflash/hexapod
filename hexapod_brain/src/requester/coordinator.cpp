@@ -136,7 +136,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     // remove the velocity from the msg MovementRequest
 
     if (isNewMoveRequestLocked_ && actualMovementType_ == newMovementType) {
-        RCLCPP_WARN_STREAM(node_->get_logger(), "isNewMoveRequestLocked is true, ignoring joystick request");
+        // Silently ignore repeated requests while locked
         return;
     }
 
