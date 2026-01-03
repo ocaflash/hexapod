@@ -5,6 +5,7 @@
 
 #include "maestro_protocol.hpp"
 #include <cstring>
+#include <unistd.h>
 
 MaestroProtocol::MaestroProtocol(std::shared_ptr<rclcpp::Node> node, const std::string& deviceName)
     : node_(node), deviceName_(deviceName) {}
@@ -55,9 +56,18 @@ bool MaestroProtocol::triggerConnection() {
     }
 
     tcflush(device_, TCIOFLUSH);
+    usleep(50000);  // 50ms delay after port setup
+    
+    // Send baud rate indication byte (0xAA) for auto-detect mode
+    // This is required when Maestro is in "UART, detect baud rate" mode
+    uint8_t baudByte = 0xAA;
+    write(device_, &baudByte, 1);
+    tcdrain(device_);
+    usleep(10000);  // 10ms delay for Maestro to detect baud rate
+    
     isConnected_ = true;
     
-    RCLCPP_INFO(node_->get_logger(), "Maestro connected on %s", deviceName_.c_str());
+    RCLCPP_INFO(node_->get_logger(), "Maestro connected on %s at 115200 baud", deviceName_.c_str());
     return true;
 }
 
@@ -75,7 +85,10 @@ bool MaestroProtocol::isConnected() const {
 
 bool MaestroProtocol::writeBytes(const uint8_t* data, size_t length) {
     if (!isConnected_) return false;
-    return write(device_, data, length) == static_cast<ssize_t>(length);
+    ssize_t written = write(device_, data, length);
+    if (written != static_cast<ssize_t>(length)) return false;
+    tcdrain(device_);  // Wait for transmission to complete
+    return true;
 }
 
 bool MaestroProtocol::readBytes(uint8_t* data, size_t length) {
@@ -154,9 +167,13 @@ bool MaestroProtocol::getMovingState(bool& isMoving) {
 }
 
 bool MaestroProtocol::getErrors(uint16_t& errors) {
+    tcflush(device_, TCIFLUSH);  // Clear input buffer before reading
+    
     uint8_t cmd = MAESTRO_CMD_GET_ERRORS;
     if (!writeBytes(&cmd, 1)) return false;
 
+    usleep(1000);  // 1ms delay for response
+    
     uint8_t response[2];
     if (!readBytes(response, sizeof(response))) return false;
 

@@ -27,21 +27,24 @@ if [ -z "$ROS_SETUP" ]; then
     exit 1
 fi
 
-# Restart Mini Maestro script before starting
-# Clear errors and reset Maestro
+# Initialize Mini Maestro UART communication
+# Send baud rate detection byte and clear errors
 MAESTRO_PORT="/dev/ttyS5"
 if [ -e "$MAESTRO_PORT" ]; then
-    echo "Resetting Mini Maestro on $MAESTRO_PORT..."
+    echo "Initializing Mini Maestro on $MAESTRO_PORT..."
     stty -F "$MAESTRO_PORT" 115200 cs8 -cstopb -parenb raw -echo
+    sleep 0.1
+    # Send baud rate indication byte (0xAA) for auto-detect mode
+    printf '\xAA' > "$MAESTRO_PORT"
+    sleep 0.1
     # Send Get Errors command (0xA1) to clear error register and turn off red LED
     printf '\xA1' > "$MAESTRO_PORT"
-    # Read 2 bytes response (error bits)
     head -c 2 < "$MAESTRO_PORT" > /dev/null 2>&1 || true
-    sleep 0.2
-    # Send Go Home command (0xA2) to reset all servos to home position
+    sleep 0.1
+    # Send Go Home command (0xA2) to reset all servos
     printf '\xA2' > "$MAESTRO_PORT"
-    sleep 0.3
-    echo "Maestro reset complete"
+    sleep 0.2
+    echo "Maestro initialized"
 else
     echo "WARNING: Maestro port $MAESTRO_PORT not found"
 fi
