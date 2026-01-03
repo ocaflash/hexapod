@@ -101,69 +101,70 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         return;
     }
 
-    // Only process movement commands if standing
-    if (isStanding_) {
-        // BUTTONS
-        if (msg.button_a) {
-            newMovementType = MovementRequest::WATCH;
-            duration_ms = 5000;
-        } else if (msg.button_b) {
-            newMovementType = MovementRequest::HIGH_FIVE;
-            duration_ms = 5000;
-        }
-
-        // LEFT STICK - linear movement
-        bool hasLinearInput = false;
-        if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
-            actualVelocity_.linear.x = -msg.left_stick_vertical * param_velocity_factor_linear_;
-            hasLinearInput = true;
-        } else {
-            actualVelocity_.linear.x = 0.0;
-        }
-
-        if (std::abs(msg.left_stick_horizontal) > param_joystick_deadzone_) {
-            actualVelocity_.linear.y = msg.left_stick_horizontal * param_velocity_factor_linear_;
-            hasLinearInput = true;
-        } else {
-            actualVelocity_.linear.y = 0.0;
-        }
-
-        // RIGHT STICK - rotation
-        bool hasRotationInput = false;
-        if (std::abs(msg.right_stick_horizontal) > param_joystick_deadzone_) {
-            actualVelocity_.angular.z = msg.right_stick_horizontal * param_velocity_factor_rotation_;
-            hasRotationInput = true;
-        } else {
-            actualVelocity_.angular.z = 0.0;
-        }
-
-        // Body height control
-        if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
-            body.position.z = msg.right_stick_vertical * 0.04;
-            hasLinearInput = true;
-        }
-
-        // Set MOVE if any stick input
-        if (hasLinearInput || hasRotationInput) {
-            newMovementType = MovementRequest::MOVE;
-        }
-
-        // Stop moving when sticks released
-        if (actualMovementType_ == MovementRequest::MOVE && newMovementType == MovementRequest::NO_REQUEST) {
-            newMovementType = MovementRequest::MOVE_TO_STAND;
-            duration_ms = 500;
-        }
-    }
-
-    // Skip if locked or no new request
-    if (isNewMoveRequestLocked_ && actualMovementType_ == newMovementType) {
-        return;
-    }
-    if (newMovementType == MovementRequest::NO_REQUEST) {
+    // Not standing - ignore all other input
+    if (!isStanding_) {
         return;
     }
 
-    submitRequestMove(newMovementType, duration_ms, "", Prio::High, body);
+    // BUTTONS (only when standing)
+    if (msg.button_a) {
+        newMovementType = MovementRequest::WATCH;
+        duration_ms = 5000;
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
+    }
+    if (msg.button_b) {
+        newMovementType = MovementRequest::HIGH_FIVE;
+        duration_ms = 5000;
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
+    }
+
+    // LEFT STICK - linear movement
+    bool hasLinearInput = false;
+    if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
+        actualVelocity_.linear.x = -msg.left_stick_vertical * param_velocity_factor_linear_;
+        hasLinearInput = true;
+    } else {
+        actualVelocity_.linear.x = 0.0;
+    }
+
+    if (std::abs(msg.left_stick_horizontal) > param_joystick_deadzone_) {
+        actualVelocity_.linear.y = msg.left_stick_horizontal * param_velocity_factor_linear_;
+        hasLinearInput = true;
+    } else {
+        actualVelocity_.linear.y = 0.0;
+    }
+
+    // RIGHT STICK - rotation
+    bool hasRotationInput = false;
+    if (std::abs(msg.right_stick_horizontal) > param_joystick_deadzone_) {
+        actualVelocity_.angular.z = msg.right_stick_horizontal * param_velocity_factor_rotation_;
+        hasRotationInput = true;
+    } else {
+        actualVelocity_.angular.z = 0.0;
+    }
+
+    // Body height control
+    if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
+        body.position.z = msg.right_stick_vertical * 0.04;
+        hasLinearInput = true;
+    }
+
+    // Set MOVE only if there is actual stick input
+    if (hasLinearInput || hasRotationInput) {
+        newMovementType = MovementRequest::MOVE;
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High, body);
+        return;
+    }
+
+    // Stop moving when sticks released (transition from MOVE to standing)
+    if (actualMovementType_ == MovementRequest::MOVE) {
+        newMovementType = MovementRequest::MOVE_TO_STAND;
+        duration_ms = 500;
+        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        return;
+    }
 }
 
 void CCoordinator::speechRecognized(std::string text) {

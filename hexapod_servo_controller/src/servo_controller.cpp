@@ -49,6 +49,17 @@ ServoController::ServoController(std::shared_ptr<rclcpp::Node> node) : node_(nod
     }
     RCLCPP_INFO(node_->get_logger(), "Maestro connection successful");
 
+    // Clear any existing errors (turns off red LED)
+    uint16_t errors = 0;
+    if (protocol_->getErrors(errors)) {
+        if (errors != 0) {
+            RCLCPP_WARN(node_->get_logger(), "Cleared Maestro errors: 0x%04X", errors);
+        }
+    }
+
+    // Send Go Home command to reset servos
+    protocol_->goHome();
+
     // Set default speed and acceleration for smooth movement
     for (auto& [idx, servo] : servos_) {
         protocol_->setSpeed(servo.getChannel(), 0);      // unlimited speed
