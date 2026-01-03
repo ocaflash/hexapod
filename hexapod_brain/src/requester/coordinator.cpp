@@ -42,18 +42,30 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
 }
 
 void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
-    // SHARE button - shutdown
-    if (msg.button_select) {
-        requestShutdown(Prio::High);
-        return;
-    }
-
     uint32_t duration_ms = 0;
     uint32_t newMovementType = MovementRequest::NO_REQUEST;
     hexapod_interfaces::msg::Pose body;
 
-    // OPTIONS button (button_start) - Stand up / Lay down toggle
-    if (msg.button_start) {
+    // Edge detection for buttons (react only on press, not hold)
+    bool buttonStartPressed = msg.button_start && !prevButtonStart_;
+    bool buttonSelectPressed = msg.button_select && !prevButtonSelect_;
+    bool dpadUpPressed = (msg.dpad_vertical == 1) && !prevDpadUp_;
+    bool dpadDownPressed = (msg.dpad_vertical == -1) && !prevDpadDown_;
+
+    // Update previous button states
+    prevButtonStart_ = msg.button_start;
+    prevButtonSelect_ = msg.button_select;
+    prevDpadUp_ = (msg.dpad_vertical == 1);
+    prevDpadDown_ = (msg.dpad_vertical == -1);
+
+    // SHARE button - shutdown (edge detection)
+    if (buttonSelectPressed) {
+        requestShutdown(Prio::High);
+        return;
+    }
+
+    // OPTIONS button (button_start) - Stand up / Lay down toggle (edge detection)
+    if (buttonStartPressed) {
         if (!isStanding_) {
             newMovementType = MovementRequest::STAND_UP;
             duration_ms = 3000;
@@ -63,21 +75,20 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
             duration_ms = 3000;
             RCLCPP_INFO(node_->get_logger(), "OPTIONS pressed: Laying down...");
         }
-        // Return early to prevent other processing
         submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         return;
     }
     
-    // DPAD UP - Stand up (alternative)
-    if (msg.dpad_vertical == 1 && !isStanding_) {
+    // DPAD UP - Stand up (edge detection)
+    if (dpadUpPressed && !isStanding_) {
         newMovementType = MovementRequest::STAND_UP;
         duration_ms = 3000;
         RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
         submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         return;
     }
-    // DPAD DOWN - Lay down (alternative)
-    if (msg.dpad_vertical == -1 && isStanding_) {
+    // DPAD DOWN - Lay down (edge detection)
+    if (dpadDownPressed && isStanding_) {
         newMovementType = MovementRequest::LAYDOWN;
         duration_ms = 3000;
         RCLCPP_INFO(node_->get_logger(), "DPAD DOWN: Laying down...");

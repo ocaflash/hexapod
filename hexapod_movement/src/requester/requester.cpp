@@ -17,6 +17,12 @@ CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActi
 
     m_subMovementRequest = node_->create_subscription<MovementRequest>(
         "movement_request", 10, std::bind(&CRequester::onMovementRequest, this, _1));
+
+    // Initialize robot to laydown position on startup
+    RCLCPP_INFO(node_->get_logger(), "Initializing robot to LAYDOWN position...");
+    kinematics_->moveBody(kinematics_->getLegsLayDownPositions());
+    actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
+                              std::make_shared<CRequestSendDuration>(1000)});
 }
 
 // ------------------------------------------------------------------------------------------------
