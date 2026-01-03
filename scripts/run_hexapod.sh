@@ -28,14 +28,20 @@ if [ -z "$ROS_SETUP" ]; then
 fi
 
 # Restart Mini Maestro script before starting
-# Send "Restart Script" command (0xA7) followed by subroutine 0
+# Clear errors and reset Maestro
 MAESTRO_PORT="/dev/ttyS5"
 if [ -e "$MAESTRO_PORT" ]; then
-    echo "Restarting Mini Maestro on $MAESTRO_PORT..."
-    stty -F "$MAESTRO_PORT" 9600 cs8 -cstopb -parenb raw -echo
-    printf '\xA7\x00' > "$MAESTRO_PORT"
-    sleep 0.5
-    echo "Maestro restart complete"
+    echo "Resetting Mini Maestro on $MAESTRO_PORT..."
+    stty -F "$MAESTRO_PORT" 115200 cs8 -cstopb -parenb raw -echo
+    # Send Get Errors command (0xA1) to clear error register and turn off red LED
+    printf '\xA1' > "$MAESTRO_PORT"
+    # Read 2 bytes response (error bits)
+    head -c 2 < "$MAESTRO_PORT" > /dev/null 2>&1 || true
+    sleep 0.2
+    # Send Go Home command (0xA2) to reset all servos to home position
+    printf '\xA2' > "$MAESTRO_PORT"
+    sleep 0.3
+    echo "Maestro reset complete"
 else
     echo "WARNING: Maestro port $MAESTRO_PORT not found"
 fi

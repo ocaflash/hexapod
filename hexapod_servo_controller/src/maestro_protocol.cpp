@@ -28,9 +28,9 @@ bool MaestroProtocol::triggerConnection() {
         return false;
     }
 
-    // Maestro UART: 9600 baud default (configurable via Maestro Control Center)
-    cfsetispeed(&options, B9600);
-    cfsetospeed(&options, B9600);
+    // Maestro UART: 115200 baud
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
 
     // 8N1 configuration
     options.c_cflag &= ~PARENB;
