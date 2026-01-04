@@ -67,10 +67,17 @@ class NodeTeleop(Node):
         self.msg.button_select = bool(buttons[8])
         self.msg.button_start = bool(buttons[9])
 
+        # DualShock 4 axis mapping:
+        # axes[0] = Left stick horizontal
+        # axes[1] = Left stick vertical
+        # axes[2] = L2 trigger (-1.0 released, +1.0 pressed)
+        # axes[3] = Right stick horizontal
+        # axes[4] = Right stick vertical
+        # axes[5] = R2 trigger (-1.0 released, +1.0 pressed)
         self.msg.left_stick_horizontal = 0.0 if abs(axes[0]) < 0.004 else axes[0]
         self.msg.left_stick_vertical = 0.0 if abs(axes[1]) < 0.004 else axes[1]
-        self.msg.right_stick_horizontal = 0.0 if abs(axes[2]) < 0.004 else axes[2]
-        self.msg.right_stick_vertical = 0.0 if abs(axes[3]) < 0.004 else axes[3]
+        self.msg.right_stick_horizontal = 0.0 if abs(axes[3]) < 0.004 else axes[3]
+        self.msg.right_stick_vertical = 0.0 if abs(axes[4]) < 0.004 else axes[4]
 
         self.msg.dpad_horizontal = hat_values[0]
         self.msg.dpad_vertical = hat_values[1]
