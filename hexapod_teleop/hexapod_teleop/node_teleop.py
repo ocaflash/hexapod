@@ -14,23 +14,17 @@ from rclpy.node import Node
 from hexapod_interfaces.msg import JoystickRequest
 
 INTERVAL = 100  # milliseconds
+RECONNECT_INTERVAL = 2000  # milliseconds
 
 class NodeTeleop(Node):
     def __init__(self):
         super().__init__('node_teleop')
         self.get_logger().info('starting node_teleop')
         self.msg = JoystickRequest()
+        self.joystick = None
 
         pygame.init()
         pygame.joystick.init()
-
-        if pygame.joystick.get_count() == 0:
-            self.get_logger().error("No joystick detected! Please connect one.")
-            exit()
-
-        self.joystick = pygame.joystick.Joystick(0)
-        self.joystick.init()
-        self.get_logger().info(f"Connected to Joystick: {self.joystick.get_name()}")
 
         self.pub = self.create_publisher(JoystickRequest, 'joystick_request', 10)
 
@@ -38,18 +32,56 @@ class NodeTeleop(Node):
         self.event_thread = threading.Thread(target=self.event_loop, daemon=True)
         self.event_thread.start()
 
+    def try_connect_joystick(self):
+        """Try to connect to a joystick, return True if successful"""
+        pygame.joystick.quit()
+        pygame.joystick.init()
+        
+        if pygame.joystick.get_count() > 0:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+            self.get_logger().info(f"Connected to Joystick: {self.joystick.get_name()}")
+            return True
+        return False
+
     def event_loop(self):
         while self.running and rclpy.ok():
+            # Try to connect if no joystick
+            if self.joystick is None:
+                if self.try_connect_joystick():
+                    pass
+                else:
+                    pygame.time.wait(RECONNECT_INTERVAL)
+                    continue
+
+            # Check if joystick still connected
+            pygame.joystick.quit()
+            pygame.joystick.init()
+            if pygame.joystick.get_count() == 0:
+                self.get_logger().warn("Joystick disconnected, waiting for reconnect...")
+                self.joystick = None
+                pygame.time.wait(RECONNECT_INTERVAL)
+                continue
+            
+            # Reinit joystick after quit/init
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+
             for event in pygame.event.get():
                 self.handle_event(event)
             pygame.time.wait(INTERVAL)
 
     def handle_event(self, event):
+        if self.joystick is None:
+            return
         if event.type not in (pygame.JOYBUTTONDOWN, pygame.JOYAXISMOTION, pygame.JOYHATMOTION):
             return
         self.publish_joystick_data()
 
     def publish_joystick_data(self):
+        if self.joystick is None:
+            return
+            
         pygame.event.pump()
 
         axes = [self.joystick.get_axis(i) for i in range(self.joystick.get_numaxes())]
