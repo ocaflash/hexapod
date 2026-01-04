@@ -157,17 +157,17 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         return;
     }
 
-    // L1 - Test body movement
+    // L1 - Look Left (body rotation)
     if (buttonL1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "L1 button: Test Body");
-        submitRequestMove(MovementRequest::TESTBODY, 2000, "", Prio::High);
+        RCLCPP_INFO(node_->get_logger(), "L1 button: Look Left");
+        submitRequestMove(MovementRequest::LOOK_LEFT, 2000, "", Prio::High);
         return;
     }
 
-    // R1 - Test legs
+    // R1 - Look Right (body rotation)
     if (buttonR1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "R1 button: Test Legs");
-        submitRequestMove(MovementRequest::TESTLEGS, 2000, "", Prio::High);
+        RCLCPP_INFO(node_->get_logger(), "R1 button: Look Right");
+        submitRequestMove(MovementRequest::LOOK_RIGHT, 2000, "", Prio::High);
         return;
     }
 
@@ -221,7 +221,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     }
 
     // RIGHT STICK vertical - body height
-    hexapod_interfaces::msg::Pose body;
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
