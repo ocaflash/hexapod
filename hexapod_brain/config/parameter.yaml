@@ -4,7 +4,7 @@ node_brain:
     activate_movement_waiting: false  # Don't auto-move when idle
     velocity_factor_linear: 0.01
     velocity_factor_rotation: 0.01
-    joystick_deadzone: 0.1  # Increased deadzone to prevent drift
+    joystick_deadzone: 0.3  # Increased deadzone to prevent drift
     # Voltage/temperature not available on Maestro
     supply_voltage: 12.0
     supply_voltage_low: 10.5

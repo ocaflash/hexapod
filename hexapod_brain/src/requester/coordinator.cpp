@@ -29,7 +29,7 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
     // Deadzone to filter stick drift
-    node->declare_parameter("joystick_deadzone", 0.5);
+    node->declare_parameter("joystick_deadzone", 0.25);
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
@@ -178,6 +178,9 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
 
     // Move if stick input (deadzone filters out drift)
     if (hasInput) {
+        RCLCPP_INFO(node_->get_logger(), "MOVE: L(%.2f,%.2f) R(%.2f) dz=%.2f",
+                    msg.left_stick_vertical, msg.left_stick_horizontal,
+                    msg.right_stick_horizontal, param_joystick_deadzone_);
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
