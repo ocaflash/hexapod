@@ -28,7 +28,7 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_velocity_factor_rotation_ =
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
-    node->declare_parameter("joystick_deadzone", 0.1);
+    node->declare_parameter("joystick_deadzone", 0.15);  // Increased to prevent drift
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
@@ -180,6 +180,12 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
 
     // === ANALOG STICKS - Movement ===
     
+    // Check if all sticks are within deadzone (neutral position)
+    bool leftStickNeutral = std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_ &&
+                            std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_;
+    bool rightStickNeutral = std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_ &&
+                             std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_;
+    
     // LEFT STICK - linear movement (forward/back, strafe)
     bool hasLinearInput = false;
     if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
@@ -210,14 +216,18 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // MOVE only if there is actual stick input
+    // MOVE only if there is actual stick input AND we're not just coming out of a transition
     if (hasLinearInput || hasRotationInput) {
-        submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
+        // Only start moving if actualMovementType_ is NO_REQUEST or already MOVE
+        if (actualMovementType_ == MovementRequest::NO_REQUEST || 
+            actualMovementType_ == MovementRequest::MOVE) {
+            submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
+        }
         return;
     }
 
     // Stop moving when sticks released (transition from MOVE to standing)
-    if (actualMovementType_ == MovementRequest::MOVE) {
+    if (actualMovementType_ == MovementRequest::MOVE && leftStickNeutral && rightStickNeutral) {
         submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
         return;
     }
