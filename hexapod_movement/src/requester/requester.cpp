@@ -59,6 +59,7 @@ void CRequester::initializeRequestHandlers() {
 
 void CRequester::requestLayDown(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::LAYDOWN;
+    RCLCPP_INFO(node_->get_logger(), "requestLayDown: duration=%d ms", msg.duration_ms);
 
     kinematics_->setHead(0.0, -20.0);
     kinematics_->moveBody(kinematics_->getLegsLayDownPositions());
@@ -69,6 +70,7 @@ void CRequester::requestLayDown(const MovementRequest& msg) {
 
 void CRequester::requestStandUp(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::STAND_UP;
+    RCLCPP_INFO(node_->get_logger(), "requestStandUp: duration=%d ms", msg.duration_ms);
 
     kinematics_->setHead(0.0, 0.0);
     kinematics_->moveBody(kinematics_->getLegsStandingPositions());

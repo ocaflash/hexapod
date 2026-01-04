@@ -66,6 +66,20 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     prevButtonL1_ = msg.button_l1;
     prevButtonR1_ = msg.button_r1;
 
+    // Check if all sticks are within deadzone (neutral position)
+    // Do this BEFORE checking lock so we can track neutral state during transitions
+    bool leftStickNeutral = std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_ &&
+                            std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_;
+    bool rightStickNeutral = std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_ &&
+                             std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_;
+    bool allSticksNeutral = leftStickNeutral && rightStickNeutral;
+    
+    // Track neutral state - must go through neutral before starting movement
+    // This is checked even during lock to properly track state
+    if (allSticksNeutral) {
+        sticksWereNeutral_ = true;
+    }
+
     // Ignore all input while locked (during transitions)
     if (isNewMoveRequestLocked_) {
         return;
@@ -183,18 +197,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
 
     // === ANALOG STICKS - Movement ===
     
-    // Check if all sticks are within deadzone (neutral position)
-    bool leftStickNeutral = std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_ &&
-                            std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_;
-    bool rightStickNeutral = std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_ &&
-                             std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_;
-    bool allSticksNeutral = leftStickNeutral && rightStickNeutral;
-    
-    // Track neutral state - must go through neutral before starting movement
-    if (allSticksNeutral) {
-        sticksWereNeutral_ = true;
-    }
-    
     // LEFT STICK - linear movement (forward/back, strafe)
     bool hasLinearInput = false;
     if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
@@ -228,13 +230,9 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     // MOVE only if:
     // 1. There is actual stick input
     // 2. Sticks were in neutral position before (prevents auto-walk after stand up)
-    // 3. We're not in the middle of another action
     if ((hasLinearInput || hasRotationInput) && sticksWereNeutral_) {
-        sticksWereNeutral_ = false;  // Reset flag
-        if (actualMovementType_ == MovementRequest::NO_REQUEST || 
-            actualMovementType_ == MovementRequest::MOVE) {
-            submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
-        }
+        sticksWereNeutral_ = false;  // Reset flag - will be set again when sticks go neutral
+        submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
