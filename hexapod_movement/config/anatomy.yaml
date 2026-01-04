@@ -49,9 +49,9 @@ node_movement:
     GAIT_STEP_LENGTH: 0.025    # [m]
     FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 30.0      # [s²/m] ??
 
-    BODY_MAX_ROLL: 20.0  # deg
-    BODY_MAX_PITCH: 20.0 # deg
-    BODY_MAX_YAW: 20.0   # deg
+    BODY_MAX_ROLL: 10.0  # deg - reduced for safety
+    BODY_MAX_PITCH: 10.0 # deg - reduced for safety
+    BODY_MAX_YAW: 15.0   # deg - reduced for safety
 
     # Head removed - 18 servos configuration (no head)
 
