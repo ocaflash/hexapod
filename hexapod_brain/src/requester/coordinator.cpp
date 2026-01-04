@@ -227,17 +227,23 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // MOVE only if:
-    // 1. There is actual stick input
-    // 2. Sticks were in neutral position before (prevents auto-walk after stand up)
-    if ((hasLinearInput || hasRotationInput) && sticksWereNeutral_) {
-        sticksWereNeutral_ = false;  // Reset flag - will be set again when sticks go neutral
+    // MOVE if there is stick input
+    if (hasLinearInput || hasRotationInput) {
+        // First movement after stand up requires sticks to have been neutral
+        if (!sticksWereNeutral_ && actualMovementType_ != MovementRequest::MOVE) {
+            // Sticks not neutral yet, ignore
+            return;
+        }
+        sticksWereNeutral_ = false;
+        RCLCPP_INFO(node_->get_logger(), "MOVE: vx=%.3f vy=%.3f wz=%.3f", 
+                    actualVelocity_.linear.x, actualVelocity_.linear.y, actualVelocity_.angular.z);
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
-    // Stop moving when sticks released (transition from MOVE to standing)
+    // Stop moving when sticks released
     if (actualMovementType_ == MovementRequest::MOVE && allSticksNeutral) {
+        RCLCPP_INFO(node_->get_logger(), "MOVE_TO_STAND: sticks released");
         submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
         return;
     }
