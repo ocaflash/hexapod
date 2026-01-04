@@ -66,6 +66,17 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     prevButtonL1_ = msg.button_l1;
     prevButtonR1_ = msg.button_r1;
 
+    // Check if all sticks are in neutral (within deadzone)
+    bool sticksNeutral = (std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_) &&
+                         (std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_) &&
+                         (std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_) &&
+                         (std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_);
+
+    // Track neutral state - must see neutral before allowing movement
+    if (sticksNeutral) {
+        sticksWereNeutral_ = true;
+    }
+
     // Ignore input while locked
     if (isNewMoveRequestLocked_) {
         return;
@@ -82,6 +93,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         if (!isStanding_) {
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Standing up...");
             isStanding_ = true;
+            sticksWereNeutral_ = false;  // Require neutral before movement
             submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         } else {
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Laying down...");
@@ -96,6 +108,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         if (dpadUpPressed) {
             RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
             isStanding_ = true;
+            sticksWereNeutral_ = false;  // Require neutral before movement
             submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         }
         return;
@@ -145,17 +158,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     }
 
     // === ANALOG STICKS ===
-    hexapod_interfaces::msg::Pose body;
-    
-    // Debug: log stick values occasionally
-    static int logCounter = 0;
-    if (++logCounter >= 50) {  // Log every 50th message (~5 sec at 10Hz)
-        logCounter = 0;
-        RCLCPP_INFO(node_->get_logger(), "Sticks: L(%.2f,%.2f) R(%.2f,%.2f) dz=%.2f",
-                    msg.left_stick_vertical, msg.left_stick_horizontal,
-                    msg.right_stick_horizontal, msg.right_stick_vertical,
-                    param_joystick_deadzone_);
-    }
     
     // Left stick - movement
     bool hasInput = false;
@@ -181,13 +183,14 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         actualVelocity_.angular.z = 0.0;
     }
 
-    // Right stick vertical - body height (don't count as movement input)
+    // Right stick vertical - body height
+    hexapod_interfaces::msg::Pose body;
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // Move if stick input
-    if (hasInput) {
+    // Move only if stick input AND sticks were neutral first (prevents drift-triggered movement)
+    if (hasInput && sticksWereNeutral_) {
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
