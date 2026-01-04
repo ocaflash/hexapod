@@ -28,8 +28,8 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_velocity_factor_rotation_ =
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
-    // Deadzone increased to 0.25 to handle stick drift
-    node->declare_parameter("joystick_deadzone", 0.5);
+    // Deadzone for movement detection (smaller than neutral detection)
+    node->declare_parameter("joystick_deadzone", 0.15);
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
@@ -66,20 +66,25 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     prevButtonL1_ = msg.button_l1;
     prevButtonR1_ = msg.button_r1;
 
-    // Check if all sticks are in neutral (within deadzone)
-    bool sticksNeutral = (std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_) &&
-                         (std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_) &&
-                         (std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_) &&
-                         (std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_);
-
-    // Track neutral state - must see neutral before allowing movement
-    if (sticksNeutral) {
-        sticksWereNeutral_ = true;
-    }
-
     // Ignore input while locked
     if (isNewMoveRequestLocked_) {
         return;
+    }
+
+    // Check if all sticks are in neutral (within deadzone)
+    // Use smaller deadzone (0.3) for neutral detection to allow movement with larger sticks
+    const double neutralDeadzone = 0.3;
+    bool sticksNeutral = (std::abs(msg.left_stick_vertical) <= neutralDeadzone) &&
+                         (std::abs(msg.left_stick_horizontal) <= neutralDeadzone) &&
+                         (std::abs(msg.right_stick_horizontal) <= neutralDeadzone) &&
+                         (std::abs(msg.right_stick_vertical) <= neutralDeadzone);
+
+    // Track neutral state - must see neutral before allowing movement after stand up
+    if (sticksNeutral) {
+        if (!sticksWereNeutral_) {
+            RCLCPP_INFO(node_->get_logger(), "Sticks neutral - movement enabled");
+        }
+        sticksWereNeutral_ = true;
     }
 
     // SHARE - shutdown

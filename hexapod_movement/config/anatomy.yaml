@@ -38,11 +38,11 @@ node_movement:
     STANDING_FOOT_POS_Z: [-0.050, -0.050, -0.050, -0.050, -0.050, -0.050]
 
     # Reference foot positions for lay down
-    # angles: 0°, 70°, -55°	| x: 0.0, y: 0.097, z: 0.0086  # original
-    # angles: 0°, 71°, -53°	| x: 0.0, y: 0.10, z: 0.01 # new
-    LAYDOWN_FOOT_POS_X: [ 0.071,  0.000, -0.071,  0.071,  0.000, -0.071]
-    LAYDOWN_FOOT_POS_Y: [ 0.071,  0.100,  0.071, -0.071, -0.100, -0.071]
-    LAYDOWN_FOOT_POS_Z: [ 0.010,  0.010,  0.010,  0.010,  0.010,  0.010]
+    # Legs folded close to body, low to ground
+    # Z more negative = legs lower/folded
+    LAYDOWN_FOOT_POS_X: [ 0.050,  0.000, -0.050,  0.050,  0.000, -0.050]
+    LAYDOWN_FOOT_POS_Y: [ 0.050,  0.070,  0.050, -0.050, -0.070, -0.050]
+    LAYDOWN_FOOT_POS_Z: [ 0.030,  0.030,  0.030,  0.030,  0.030,  0.030]
 
     # for gaits
     LEG_LIFT_HEIGHT: 0.03      # [m]   // -0.05 + 0.03 = -0.01
