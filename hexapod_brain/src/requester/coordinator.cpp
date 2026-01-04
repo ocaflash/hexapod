@@ -28,8 +28,8 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_velocity_factor_rotation_ =
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
-    // Deadzone increased to 0.2 to handle stick drift
-    node->declare_parameter("joystick_deadzone", 0.2);
+    // Deadzone increased to 0.25 to handle stick drift
+    node->declare_parameter("joystick_deadzone", 0.5);
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
@@ -147,6 +147,16 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     // === ANALOG STICKS ===
     hexapod_interfaces::msg::Pose body;
     
+    // Debug: log stick values occasionally
+    static int logCounter = 0;
+    if (++logCounter >= 50) {  // Log every 50th message (~5 sec at 10Hz)
+        logCounter = 0;
+        RCLCPP_INFO(node_->get_logger(), "Sticks: L(%.2f,%.2f) R(%.2f,%.2f) dz=%.2f",
+                    msg.left_stick_vertical, msg.left_stick_horizontal,
+                    msg.right_stick_horizontal, msg.right_stick_vertical,
+                    param_joystick_deadzone_);
+    }
+    
     // Left stick - movement
     bool hasInput = false;
     if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
@@ -171,7 +181,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         actualVelocity_.angular.z = 0.0;
     }
 
-    // Right stick vertical - body height
+    // Right stick vertical - body height (don't count as movement input)
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
