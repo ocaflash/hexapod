@@ -90,6 +90,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
             duration_ms = 2000;
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Standing up...");
             isStanding_ = true;  // Set immediately to prevent re-trigger
+            sticksWereNeutral_ = false;  // Require sticks to go neutral before walking
         } else {
             newMovementType = MovementRequest::LAYDOWN;
             duration_ms = 2000;
@@ -108,6 +109,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
             duration_ms = 2000;
             RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
             isStanding_ = true;
+            sticksWereNeutral_ = false;  // Require sticks to go neutral before walking
             submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         }
         return;
@@ -140,31 +142,32 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         return;
     }
 
-    // Square (button_x) - Dance/Body Roll
+    // Square (button_x) - Clap
     if (buttonXPressed) {
-        RCLCPP_INFO(node_->get_logger(), "Square button: Body Roll");
-        submitRequestMove(MovementRequest::BODY_ROLL, 3000, "", Prio::High);
-        return;
-    }
-
-    // Triangle (button_y) - Clap
-    if (buttonYPressed) {
-        RCLCPP_INFO(node_->get_logger(), "Triangle button: Clap");
+        RCLCPP_INFO(node_->get_logger(), "Square button: Clap");
         submitRequestMove(MovementRequest::CLAP, 3000, "", Prio::High);
         return;
     }
 
-    // L1 - Look Left
-    if (buttonL1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "L1 button: Look Left");
-        submitRequestMove(MovementRequest::LOOK_LEFT, 2000, "", Prio::High);
+    // Triangle (button_y) - Transport mode (compact)
+    if (buttonYPressed) {
+        RCLCPP_INFO(node_->get_logger(), "Triangle button: Transport");
+        submitRequestMove(MovementRequest::TRANSPORT, 2000, "", Prio::High);
+        isStanding_ = false;
         return;
     }
 
-    // R1 - Look Right
+    // L1 - Test body movement
+    if (buttonL1Pressed) {
+        RCLCPP_INFO(node_->get_logger(), "L1 button: Test Body");
+        submitRequestMove(MovementRequest::TESTBODY, 2000, "", Prio::High);
+        return;
+    }
+
+    // R1 - Test legs
     if (buttonR1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "R1 button: Look Right");
-        submitRequestMove(MovementRequest::LOOK_RIGHT, 2000, "", Prio::High);
+        RCLCPP_INFO(node_->get_logger(), "R1 button: Test Legs");
+        submitRequestMove(MovementRequest::TESTLEGS, 2000, "", Prio::High);
         return;
     }
 
@@ -185,6 +188,12 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
                             std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_;
     bool rightStickNeutral = std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_ &&
                              std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_;
+    bool allSticksNeutral = leftStickNeutral && rightStickNeutral;
+    
+    // Track neutral state - must go through neutral before starting movement
+    if (allSticksNeutral) {
+        sticksWereNeutral_ = true;
+    }
     
     // LEFT STICK - linear movement (forward/back, strafe)
     bool hasLinearInput = false;
@@ -212,13 +221,17 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     }
 
     // RIGHT STICK vertical - body height
+    hexapod_interfaces::msg::Pose body;
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // MOVE only if there is actual stick input AND we're not just coming out of a transition
-    if (hasLinearInput || hasRotationInput) {
-        // Only start moving if actualMovementType_ is NO_REQUEST or already MOVE
+    // MOVE only if:
+    // 1. There is actual stick input
+    // 2. Sticks were in neutral position before (prevents auto-walk after stand up)
+    // 3. We're not in the middle of another action
+    if ((hasLinearInput || hasRotationInput) && sticksWereNeutral_) {
+        sticksWereNeutral_ = false;  // Reset flag
         if (actualMovementType_ == MovementRequest::NO_REQUEST || 
             actualMovementType_ == MovementRequest::MOVE) {
             submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
@@ -227,7 +240,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     }
 
     // Stop moving when sticks released (transition from MOVE to standing)
-    if (actualMovementType_ == MovementRequest::MOVE && leftStickNeutral && rightStickNeutral) {
+    if (actualMovementType_ == MovementRequest::MOVE && allSticksNeutral) {
         submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
         return;
     }

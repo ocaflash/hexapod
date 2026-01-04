@@ -84,6 +84,7 @@ class CCoordinator : public IRequester {
     uint32_t actualMovementType_ = hexapod_interfaces::msg::MovementRequest::NO_REQUEST;
     bool isStanding_ = false;
     bool isRelayOn_ = false;
+    bool sticksWereNeutral_ = true;  // Track if sticks were in neutral before movement
 
     float param_velocity_factor_linear_ = 0.0;
     float param_velocity_factor_rotation_ = 0.0;
