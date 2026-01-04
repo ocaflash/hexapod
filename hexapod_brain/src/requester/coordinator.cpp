@@ -28,21 +28,21 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_velocity_factor_rotation_ =
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
-    node->declare_parameter("joystick_deadzone", 0.15);  // Increased to prevent drift
+    // Deadzone increased to 0.2 to handle stick drift
+    node->declare_parameter("joystick_deadzone", 0.2);
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
     node->declare_parameter("autostart_listening", false);
     node->declare_parameter("activate_movement_waiting", false);
-    param_activate_movement_waiting_ = false;  // Always disabled
+    param_activate_movement_waiting_ = false;
 
-    // Start in laydown position, wait for stand up command
     isStanding_ = false;
-    RCLCPP_INFO(node_->get_logger(), "Robot starting in LAYDOWN position. Press DPAD UP to stand up.");
+    RCLCPP_INFO(node_->get_logger(), "Robot starting in LAYDOWN. Press OPTIONS or DPAD UP to stand.");
 }
 
 void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
-    // Edge detection for buttons (react only on press, not hold)
+    // Edge detection for buttons
     bool buttonStartPressed = msg.button_start && !prevButtonStart_;
     bool buttonSelectPressed = msg.button_select && !prevButtonSelect_;
     bool dpadUpPressed = (msg.dpad_vertical == 1) && !prevDpadUp_;
@@ -54,7 +54,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     bool buttonL1Pressed = msg.button_l1 && !prevButtonL1_;
     bool buttonR1Pressed = msg.button_r1 && !prevButtonR1_;
 
-    // Update previous button states
+    // Update previous states
     prevButtonStart_ = msg.button_start;
     prevButtonSelect_ = msg.button_select;
     prevDpadUp_ = (msg.dpad_vertical == 1);
@@ -66,207 +66,132 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     prevButtonL1_ = msg.button_l1;
     prevButtonR1_ = msg.button_r1;
 
-    // Check if all sticks are within deadzone (neutral position)
-    // Do this BEFORE checking lock so we can track neutral state during transitions
-    bool leftStickNeutral = std::abs(msg.left_stick_vertical) <= param_joystick_deadzone_ &&
-                            std::abs(msg.left_stick_horizontal) <= param_joystick_deadzone_;
-    bool rightStickNeutral = std::abs(msg.right_stick_horizontal) <= param_joystick_deadzone_ &&
-                             std::abs(msg.right_stick_vertical) <= param_joystick_deadzone_;
-    bool allSticksNeutral = leftStickNeutral && rightStickNeutral;
-    
-    // Track neutral state - must go through neutral before starting movement
-    // This is checked even during lock to properly track state
-    if (allSticksNeutral) {
-        sticksWereNeutral_ = true;
-    }
-
-    // Ignore all input while locked (during transitions)
+    // Ignore input while locked
     if (isNewMoveRequestLocked_) {
         return;
     }
 
-    uint32_t duration_ms = 0;
-    uint32_t newMovementType = MovementRequest::NO_REQUEST;
-    hexapod_interfaces::msg::Pose body;
-
-    // === SYSTEM BUTTONS (always active) ===
-    
-    // SHARE button - shutdown
+    // SHARE - shutdown
     if (buttonSelectPressed) {
         requestShutdown(Prio::High);
         return;
     }
 
-    // OPTIONS button - Stand up / Lay down toggle
+    // OPTIONS - toggle stand/laydown
     if (buttonStartPressed) {
         if (!isStanding_) {
-            newMovementType = MovementRequest::STAND_UP;
-            duration_ms = 2000;
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Standing up...");
-            isStanding_ = true;  // Set immediately to prevent re-trigger
-            sticksWereNeutral_ = false;  // Require sticks to go neutral before walking
+            isStanding_ = true;
+            submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         } else {
-            newMovementType = MovementRequest::LAYDOWN;
-            duration_ms = 2000;
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Laying down...");
-            isStanding_ = false;  // Set immediately to prevent re-trigger
+            isStanding_ = false;
+            submitRequestMove(MovementRequest::LAYDOWN, 2000, "", Prio::High);
         }
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
         return;
     }
 
-    // === NOT STANDING - only allow stand up ===
+    // Not standing - only allow stand up
     if (!isStanding_) {
-        // DPAD UP - Stand up (alternative)
         if (dpadUpPressed) {
-            newMovementType = MovementRequest::STAND_UP;
-            duration_ms = 2000;
             RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
             isStanding_ = true;
-            sticksWereNeutral_ = false;  // Require sticks to go neutral before walking
-            submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+            submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         }
         return;
     }
 
-    // === STANDING - process all inputs ===
+    // === STANDING ===
 
-    // DPAD DOWN - Lay down
+    // DPAD DOWN - lay down
     if (dpadDownPressed) {
-        newMovementType = MovementRequest::LAYDOWN;
-        duration_ms = 2000;
         RCLCPP_INFO(node_->get_logger(), "DPAD DOWN: Laying down...");
         isStanding_ = false;
-        submitRequestMove(newMovementType, duration_ms, "", Prio::High);
+        submitRequestMove(MovementRequest::LAYDOWN, 2000, "", Prio::High);
         return;
     }
 
-    // === ACTION BUTTONS (DualShock mapping) ===
-    // X (button_a) - Watch/Look around
+    // Action buttons
     if (buttonAPressed) {
-        RCLCPP_INFO(node_->get_logger(), "X button: Watch");
+        RCLCPP_INFO(node_->get_logger(), "X: Watch");
         submitRequestMove(MovementRequest::WATCH, 3000, "", Prio::High);
         return;
     }
-
-    // Circle (button_b) - High Five
     if (buttonBPressed) {
-        RCLCPP_INFO(node_->get_logger(), "Circle button: High Five");
+        RCLCPP_INFO(node_->get_logger(), "Circle: High Five");
         submitRequestMove(MovementRequest::HIGH_FIVE, 3000, "", Prio::High);
         return;
     }
-
-    // Square (button_x) - Clap
     if (buttonXPressed) {
-        RCLCPP_INFO(node_->get_logger(), "Square button: Clap");
+        RCLCPP_INFO(node_->get_logger(), "Square: Clap");
         submitRequestMove(MovementRequest::CLAP, 3000, "", Prio::High);
         return;
     }
-
-    // Triangle (button_y) - Transport mode (compact)
     if (buttonYPressed) {
-        RCLCPP_INFO(node_->get_logger(), "Triangle button: Transport");
-        submitRequestMove(MovementRequest::TRANSPORT, 2000, "", Prio::High);
+        RCLCPP_INFO(node_->get_logger(), "Triangle: Transport");
         isStanding_ = false;
+        submitRequestMove(MovementRequest::TRANSPORT, 2000, "", Prio::High);
         return;
     }
-
-    // L1 - Look Left (body rotation)
     if (buttonL1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "L1 button: Look Left");
+        RCLCPP_INFO(node_->get_logger(), "L1: Look Left");
         submitRequestMove(MovementRequest::LOOK_LEFT, 2000, "", Prio::High);
         return;
     }
-
-    // R1 - Look Right (body rotation)
     if (buttonR1Pressed) {
-        RCLCPP_INFO(node_->get_logger(), "R1 button: Look Right");
+        RCLCPP_INFO(node_->get_logger(), "R1: Look Right");
         submitRequestMove(MovementRequest::LOOK_RIGHT, 2000, "", Prio::High);
         return;
     }
 
-    // DPAD LEFT/RIGHT - could be used for side stepping or rotation
-    if (msg.dpad_horizontal == -1) {
-        // DPAD LEFT - Stomp left
-        // Could add action here
-    }
-    if (msg.dpad_horizontal == 1) {
-        // DPAD RIGHT - Stomp right
-        // Could add action here
-    }
-
-    // === ANALOG STICKS - Movement ===
+    // === ANALOG STICKS ===
+    hexapod_interfaces::msg::Pose body;
     
-    // LEFT STICK - linear movement (forward/back, strafe)
-    bool hasLinearInput = false;
+    // Left stick - movement
+    bool hasInput = false;
     if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
         actualVelocity_.linear.x = -msg.left_stick_vertical * param_velocity_factor_linear_;
-        hasLinearInput = true;
+        hasInput = true;
     } else {
         actualVelocity_.linear.x = 0.0;
     }
 
     if (std::abs(msg.left_stick_horizontal) > param_joystick_deadzone_) {
         actualVelocity_.linear.y = msg.left_stick_horizontal * param_velocity_factor_linear_;
-        hasLinearInput = true;
+        hasInput = true;
     } else {
         actualVelocity_.linear.y = 0.0;
     }
 
-    // RIGHT STICK horizontal - rotation (turn left/right)
-    bool hasRotationInput = false;
+    // Right stick horizontal - rotation
     if (std::abs(msg.right_stick_horizontal) > param_joystick_deadzone_) {
         actualVelocity_.angular.z = msg.right_stick_horizontal * param_velocity_factor_rotation_;
-        hasRotationInput = true;
+        hasInput = true;
     } else {
         actualVelocity_.angular.z = 0.0;
     }
 
-    // RIGHT STICK vertical - body height
+    // Right stick vertical - body height
     if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // MOVE if there is stick input
-    if (hasLinearInput || hasRotationInput) {
-        // First movement after stand up requires sticks to have been neutral
-        if (!sticksWereNeutral_ && actualMovementType_ != MovementRequest::MOVE) {
-            // Sticks not neutral yet, ignore
-            return;
-        }
-        sticksWereNeutral_ = false;
-        RCLCPP_INFO(node_->get_logger(), "MOVE: vx=%.3f vy=%.3f wz=%.3f", 
-                    actualVelocity_.linear.x, actualVelocity_.linear.y, actualVelocity_.angular.z);
+    // Move if stick input
+    if (hasInput) {
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
-    // Stop moving when sticks released
-    if (actualMovementType_ == MovementRequest::MOVE && allSticksNeutral) {
-        RCLCPP_INFO(node_->get_logger(), "MOVE_TO_STAND: sticks released");
+    // Stop when sticks released
+    if (actualMovementType_ == MovementRequest::MOVE) {
         submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
-        return;
     }
 }
 
-void CCoordinator::speechRecognized(std::string text) {
-    // Speech recognition disabled
-    (void)text;
-}
+void CCoordinator::speechRecognized(std::string text) { (void)text; }
+void CCoordinator::supplyVoltageReceived(float voltage) { (void)voltage; }
+void CCoordinator::servoStatusReceived(const ServoStatus& msg) { (void)msg; }
 
-void CCoordinator::supplyVoltageReceived(float voltage) {
-    // Voltage monitoring disabled for Maestro
-    (void)voltage;
-}
-
-void CCoordinator::servoStatusReceived(const ServoStatus& msg) {
-    // Servo status monitoring disabled for Maestro
-    (void)msg;
-}
-
-// ----------------------------------------------------------------------------
-//  Requests
-// ---------------------------------------------------------------------------
 template <typename RequestT, typename... Args>
 void CCoordinator::submitSingleRequest(Prio prio, Args&&... args) {
     static_assert(std::is_base_of<RequestBase, RequestT>::value, "RequestT must derive from RequestBase");
@@ -275,10 +200,7 @@ void CCoordinator::submitSingleRequest(Prio prio, Args&&... args) {
     actionPlanner_->request(request_v, prio);
 }
 
-void CCoordinator::requestNotFound(std::string textRecognized, Prio prio) {
-    (void)textRecognized;
-    (void)prio;
-}
+void CCoordinator::requestNotFound(std::string textRecognized, Prio prio) { (void)textRecognized; (void)prio; }
 
 void CCoordinator::requestShutdown(Prio prio) {
     RCLCPP_INFO(node_->get_logger(), "Shutdown requested");
@@ -289,9 +211,7 @@ void CCoordinator::requestShutdown(Prio prio) {
 }
 
 void CCoordinator::requestReactionOnError(std::string text, bool isShutdownRequested, Prio prio) {
-    (void)text;
-    (void)isShutdownRequested;
-    (void)prio;
+    (void)text; (void)isShutdownRequested; (void)prio;
 }
 
 void CCoordinator::requestMusikOn(Prio prio) { (void)prio; }
@@ -301,54 +221,38 @@ void CCoordinator::requestChat(std::string text, Prio prio) { (void)text; (void)
 
 void CCoordinator::requestTestBody() {
     hexapod_interfaces::msg::Pose body;
-    int duration_ms = 2000;
-
     body.position.x = 0.05;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
-    body.position.x = 0.0;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
-
-    body.position.y = 0.05;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
-    body.position.y = 0.0;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
-
-    body.position.z = 0.03;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
-    body.position.z = 0.0;
-    submitRequestMove(MovementRequest::TESTBODY, duration_ms, "", Prio::High, body);
+    submitRequestMove(MovementRequest::TESTBODY, 2000, "", Prio::High, body);
 }
 
 void CCoordinator::requestTestLegs() {
     submitRequestMove(MovementRequest::TESTLEGS, 2000, "", Prio::High);
 }
 
-void CCoordinator::requestWaiting(Prio prio) {
-    (void)prio;
-}
+void CCoordinator::requestWaiting(Prio prio) { (void)prio; }
 
 void CCoordinator::submitRequestMove(uint32_t movementType, uint32_t duration_ms, std::string comment,
                                      Prio prio, hexapod_interfaces::msg::Pose body) {
-    std::vector<std::shared_ptr<RequestBase>> request_v;
-    (void)comment;  // No speech output
-
+    (void)comment;
+    
     auto request = MovementRequest();
     request.type = movementType;
     request.body = body;
     request.velocity = actualVelocity_;
     request.duration_ms = duration_ms;
     request.name = movementTypeName_.at(request.type);
+    
+    std::vector<std::shared_ptr<RequestBase>> request_v;
     request_v.push_back(std::make_shared<CRequestMove>(request));
     actionPlanner_->request(request_v, prio);
 
     actualMovementType_ = movementType;
 
-    // Lock requests except for continuous MOVE
-    if (MovementRequest::MOVE == movementType) {
+    // Don't lock for continuous MOVE
+    if (movementType == MovementRequest::MOVE) {
         return;
     }
     
-    // Lock input during action
     isNewMoveRequestLocked_ = true;
     timerMovementRequest_->waitMsNonBlocking(duration_ms, [this]() {
         isNewMoveRequestLocked_ = false;
@@ -360,8 +264,6 @@ void CCoordinator::requestTellSupplyVoltage(Prio prio) { (void)prio; }
 void CCoordinator::requestTellServoVoltage(Prio prio) { (void)prio; }
 void CCoordinator::requestTellServoTemperature(Prio prio) { (void)prio; }
 
-void CCoordinator::update() {
-    // No automatic movement when idle
-}
+void CCoordinator::update() {}
 
 }  // namespace brain
