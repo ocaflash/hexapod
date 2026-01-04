@@ -28,8 +28,8 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_velocity_factor_rotation_ =
         node->get_parameter("velocity_factor_rotation").get_parameter_value().get<double>();
 
-    // Deadzone for movement detection (smaller than neutral detection)
-    node->declare_parameter("joystick_deadzone", 0.15);
+    // Deadzone to filter stick drift
+    node->declare_parameter("joystick_deadzone", 0.5);
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
@@ -71,22 +71,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         return;
     }
 
-    // Check if all sticks are in neutral (within deadzone)
-    // Use smaller deadzone (0.3) for neutral detection to allow movement with larger sticks
-    const double neutralDeadzone = 0.3;
-    bool sticksNeutral = (std::abs(msg.left_stick_vertical) <= neutralDeadzone) &&
-                         (std::abs(msg.left_stick_horizontal) <= neutralDeadzone) &&
-                         (std::abs(msg.right_stick_horizontal) <= neutralDeadzone) &&
-                         (std::abs(msg.right_stick_vertical) <= neutralDeadzone);
-
-    // Track neutral state - must see neutral before allowing movement after stand up
-    if (sticksNeutral) {
-        if (!sticksWereNeutral_) {
-            RCLCPP_INFO(node_->get_logger(), "Sticks neutral - movement enabled");
-        }
-        sticksWereNeutral_ = true;
-    }
-
     // SHARE - shutdown
     if (buttonSelectPressed) {
         requestShutdown(Prio::High);
@@ -98,7 +82,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         if (!isStanding_) {
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Standing up...");
             isStanding_ = true;
-            sticksWereNeutral_ = false;  // Require neutral before movement
             submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         } else {
             RCLCPP_INFO(node_->get_logger(), "OPTIONS: Laying down...");
@@ -113,7 +96,6 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         if (dpadUpPressed) {
             RCLCPP_INFO(node_->get_logger(), "DPAD UP: Standing up...");
             isStanding_ = true;
-            sticksWereNeutral_ = false;  // Require neutral before movement
             submitRequestMove(MovementRequest::STAND_UP, 2000, "", Prio::High);
         }
         return;
@@ -194,8 +176,8 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // Move only if stick input AND sticks were neutral first (prevents drift-triggered movement)
-    if (hasInput && sticksWereNeutral_) {
+    // Move if stick input (deadzone filters out drift)
+    if (hasInput) {
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
