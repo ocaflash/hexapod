@@ -176,18 +176,15 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 
-    // Move if stick input (deadzone filters out drift)
+    // Move if stick input
     if (hasInput) {
-        RCLCPP_INFO(node_->get_logger(), "MOVE: L(%.2f,%.2f) R(%.2f) dz=%.2f",
-                    msg.left_stick_vertical, msg.left_stick_horizontal,
-                    msg.right_stick_horizontal, param_joystick_deadzone_);
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
     // Stop when sticks released
     if (actualMovementType_ == MovementRequest::MOVE) {
-        submitRequestMove(MovementRequest::MOVE_TO_STAND, 500, "", Prio::High);
+        submitRequestMove(MovementRequest::MOVE_TO_STAND, 300, "", Prio::High);
     }
 }
 
