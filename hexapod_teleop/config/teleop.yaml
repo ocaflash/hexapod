@@ -1,0 +1,27 @@
+node_teleop:
+  ros__parameters:
+    # DualShock 4 default mapping (SDL2). If your indices differ on Ubuntu BT,
+    # override these values.
+    button_a_index: 2
+    button_b_index: 1
+    button_x_index: 3
+    button_y_index: 0
+    button_l1_index: 4
+    button_l2_index: 6
+    button_r1_index: 5
+    button_r2_index: 7
+    button_select_index: 8
+    button_start_index: 9
+
+    axis_left_stick_horizontal_index: 0
+    axis_left_stick_vertical_index: 1
+    axis_right_stick_horizontal_index: 3
+    axis_right_stick_vertical_index: 4
+
+    # D-Pad
+    hat_index: 0
+
+    # Small deadband to suppress jitter reported by SDL for DS4.
+    axis_noise_threshold: 0.004
+
+

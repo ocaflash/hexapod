@@ -42,6 +42,10 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     joystickTimeout_ =
         std::chrono::milliseconds(node->get_parameter("joystick_timeout_ms").get_parameter_value().get<int>());
 
+    node->declare_parameter("joystick_stop_delay_ms", 200);
+    joystickStopDelay_ =
+        std::chrono::milliseconds(node->get_parameter("joystick_stop_delay_ms").get_parameter_value().get<int>());
+
     RCLCPP_INFO(node_->get_logger(), "Robot starting in LAYDOWN. Press OPTIONS or DPAD UP to stand.");
 }
 
@@ -185,13 +189,26 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
 
     // Move if stick input
     if (hasInput) {
+        lastNonNeutralTime_ = lastJoystickMsgTime_;
+        sticksWereNeutral_ = false;
         submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
         return;
     }
 
-    // Stop when sticks released
-    if (actualMovementType_ == MovementRequest::MOVE) {
-        submitRequestMove(MovementRequest::MOVE_TO_STAND, 300, "", Prio::High);
+    // Stop only after sticks have been neutral for a short period (debounce/hysteresis).
+    // Without this, small BT/SDL jitter can cause rapid MOVE <-> MOVE_TO_STAND toggling ("random leg motion").
+    if (actualMovementType_ == MovementRequest::MOVE && !sticksWereNeutral_) {
+        if (lastNonNeutralTime_.nanoseconds() == 0) {
+            lastNonNeutralTime_ = lastJoystickMsgTime_;
+            return;
+        }
+
+        const auto age = lastJoystickMsgTime_ - lastNonNeutralTime_;
+        const auto age_ms = std::chrono::milliseconds(age.nanoseconds() / 1000000);
+        if (age_ms > joystickStopDelay_) {
+            sticksWereNeutral_ = true;
+            submitRequestMove(MovementRequest::MOVE_TO_STAND, 300, "", Prio::High);
+        }
     }
 }
 
