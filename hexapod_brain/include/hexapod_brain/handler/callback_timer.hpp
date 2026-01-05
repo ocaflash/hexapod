@@ -53,7 +53,12 @@ class CCallbackTimer {
             isRunning_ = false;
         }
         cv_.notify_all();
-        if (timerThread_.joinable()) timerThread_.join();
+        if (!timerThread_.joinable()) return;
+        if (std::this_thread::get_id() == timerThread_.get_id()) {
+            timerThread_.detach();
+            return;
+        }
+        timerThread_.join();
     }
 
     bool isRunning() {
