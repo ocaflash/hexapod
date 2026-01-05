@@ -17,9 +17,11 @@ void CActionExecutor::onServoHandlerDone() {
 }
 
 void CActionExecutor::requestWithoutQueue(std::vector<std::shared_ptr<CRequestBase>> requests_v) {
-    if (!m_activeRequest_v.empty()) {
+    // Real-time path: override any queued/active motion to avoid "overlay" of old commands.
+    if (!m_activeRequest_v.empty() || !m_pendingRequests_l.empty()) {
         RCLCPP_WARN_STREAM(node_->get_logger(),
-                           "CActionExecutor:: requestWithoutQueue but queue is not empty");
+                           "CActionExecutor::requestWithoutQueue overriding non-empty queue");
+        cancelRunningRequest();
     }
     execute(requests_v);
 }
@@ -67,5 +69,6 @@ void CActionExecutor::execute(std::vector<std::shared_ptr<CRequestBase>>& reques
 void CActionExecutor::cancelRunningRequest() {
     // RCLCPP_INFO_STREAM(node_->get_logger(), "CActionExecutor::cancelRunningRequest");
     m_activeRequest_v.clear();
+    m_pendingRequests_l.clear();
     handlerServo_->cancel();
 }

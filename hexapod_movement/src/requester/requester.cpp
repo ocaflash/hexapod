@@ -83,6 +83,8 @@ void CRequester::requestMoveToStand(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::MOVE_TO_STAND;
 
     kinematics_->setHead(0.0, 0.0);
+    // Ensure we don't stack multiple stop sequences or mix with residual MOVE queue.
+    actionExecutor_->cancelRunningRequest();
     // Smoothly interpolate from current feet positions to standing positions.
     // This avoids abrupt tripod switching that can cause "twitching/convulsions" after fast stop.
     const auto current = kinematics_->getLegsPositions();
@@ -154,6 +156,9 @@ void CRequester::requestMove(const MovementRequest& msg) {
     // at the beginning of the movement we have to lift the legs
     // TODO make the 500ms dependent on the velocity
     if (activeRequest_ != MovementRequest::MOVE) {
+        // If we are coming from a queued sequence (e.g. MOVE_TO_STAND interpolation),
+        // clear it so old steps cannot "fight" the new gait updates.
+        actionExecutor_->cancelRunningRequest();
         transitionToMoveActive_ = true;
         gaitController_->liftLegsTripodGroup(true);
         actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
