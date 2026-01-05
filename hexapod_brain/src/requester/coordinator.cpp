@@ -191,7 +191,8 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     if (hasInput) {
         lastNonNeutralTime_ = lastJoystickMsgTime_;
         sticksWereNeutral_ = false;
-        submitRequestMove(MovementRequest::MOVE, 0, "", Prio::High, body);
+        // MOVE is a continuous stream; treat it as Background to avoid ActionPlanner cancelling on every update.
+        submitRequestMove(MovementRequest::MOVE, 0, "", Prio::Background, body);
         return;
     }
 
