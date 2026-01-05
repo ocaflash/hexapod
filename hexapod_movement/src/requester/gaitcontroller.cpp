@@ -12,6 +12,11 @@ CGaitController::CGaitController(std::shared_ptr<rclcpp::Node> node, std::shared
     LEG_LIFT_HEIGHT = node->declare_parameter<double>("LEG_LIFT_HEIGHT", 0.03);
 }
 
+void CGaitController::reset() {
+    phase_ = 0.0;
+    velocity_ = geometry_msgs::msg::Twist();
+}
+
 void CGaitController::setPhaseNeutral() {
     phase_ = 0.0;
 }

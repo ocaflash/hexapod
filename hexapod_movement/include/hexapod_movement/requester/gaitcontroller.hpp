@@ -21,6 +21,10 @@ class CGaitController {
     CGaitController(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CKinematics> kinematics);
     ~CGaitController() = default;
 
+    // Reset internal gait state (phase + filtered velocity) so repeated MOVE commands
+    // start consistently and don't inherit "residual" speed from previous runs.
+    void reset();
+
     void liftLegsTripodGroup(bool isFirstTripod = true);
     void updateCombinedTripodGait(const geometry_msgs::msg::Twist& velocity,
                                   CPose body = CPose(0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
