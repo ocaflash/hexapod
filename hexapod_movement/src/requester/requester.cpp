@@ -116,7 +116,8 @@ void CRequester::requestWaiting(const MovementRequest& msg) {
         waitingPositionDown[legIndex] = CPosition(position.x, position.y, zPostionDown);
     }
 
-    int numberOfIterations = msg.duration_ms / 2000;  // 2000ms = 2 seconds per iteration
+    int numberOfIterations = msg.duration_ms / 2000;  // 2000ms = ~2 seconds per iteration
+    if (numberOfIterations < 1) numberOfIterations = 1;
     int waitingTime = msg.duration_ms / numberOfIterations;
 
     for (int i = 0; i < numberOfIterations; ++i) {

@@ -23,6 +23,26 @@ class NodeTeleop(Node):
         self.joystick = None
         self.connected = False
 
+        # DS4 (SDL2) default mapping. Make configurable because indices can differ per OS/driver/mode.
+        self.declare_parameter('button_a_index', 2)
+        self.declare_parameter('button_b_index', 1)
+        self.declare_parameter('button_x_index', 3)
+        self.declare_parameter('button_y_index', 0)
+        self.declare_parameter('button_l1_index', 4)
+        self.declare_parameter('button_l2_index', 6)
+        self.declare_parameter('button_r1_index', 5)
+        self.declare_parameter('button_r2_index', 7)
+        self.declare_parameter('button_select_index', 8)
+        self.declare_parameter('button_start_index', 9)
+
+        self.declare_parameter('axis_left_stick_horizontal_index', 0)
+        self.declare_parameter('axis_left_stick_vertical_index', 1)
+        self.declare_parameter('axis_right_stick_horizontal_index', 3)
+        self.declare_parameter('axis_right_stick_vertical_index', 4)
+
+        self.declare_parameter('hat_index', 0)
+        self.declare_parameter('axis_noise_threshold', 0.004)
+
         pygame.init()
         pygame.joystick.init()
 
@@ -66,20 +86,31 @@ class NodeTeleop(Node):
         try:
             axes = [self.joystick.get_axis(i) for i in range(self.joystick.get_numaxes())]
             buttons = [self.joystick.get_button(i) for i in range(self.joystick.get_numbuttons())]
-            hat_values = self.joystick.get_hat(0)
+            hat_index = int(self.get_parameter('hat_index').value)
+            hat_values = (
+                self.joystick.get_hat(hat_index)
+                if self.joystick.get_numhats() > 0 and hat_index < self.joystick.get_numhats()
+                else (0, 0)
+            )
         except pygame.error:
             return
 
-        self.msg.button_a = bool(buttons[2])
-        self.msg.button_b = bool(buttons[1])
-        self.msg.button_x = bool(buttons[3])
-        self.msg.button_y = bool(buttons[0])
-        self.msg.button_l1 = bool(buttons[4])
-        self.msg.button_l2 = bool(buttons[6])
-        self.msg.button_r1 = bool(buttons[5])
-        self.msg.button_r2 = bool(buttons[7])
-        self.msg.button_select = bool(buttons[8])
-        self.msg.button_start = bool(buttons[9])
+        def btn(i: int) -> bool:
+            return bool(buttons[i]) if i < len(buttons) else False
+
+        def ax(i: int) -> float:
+            return float(axes[i]) if i < len(axes) else 0.0
+
+        self.msg.button_a = btn(int(self.get_parameter('button_a_index').value))
+        self.msg.button_b = btn(int(self.get_parameter('button_b_index').value))
+        self.msg.button_x = btn(int(self.get_parameter('button_x_index').value))
+        self.msg.button_y = btn(int(self.get_parameter('button_y_index').value))
+        self.msg.button_l1 = btn(int(self.get_parameter('button_l1_index').value))
+        self.msg.button_l2 = btn(int(self.get_parameter('button_l2_index').value))
+        self.msg.button_r1 = btn(int(self.get_parameter('button_r1_index').value))
+        self.msg.button_r2 = btn(int(self.get_parameter('button_r2_index').value))
+        self.msg.button_select = btn(int(self.get_parameter('button_select_index').value))
+        self.msg.button_start = btn(int(self.get_parameter('button_start_index').value))
 
         # DualShock 4 axis mapping:
         # axes[0] = Left stick horizontal
@@ -88,10 +119,16 @@ class NodeTeleop(Node):
         # axes[3] = Right stick horizontal
         # axes[4] = Right stick vertical
         # axes[5] = R2 trigger (-1.0 released, +1.0 pressed)
-        self.msg.left_stick_horizontal = 0.0 if abs(axes[0]) < 0.004 else axes[0]
-        self.msg.left_stick_vertical = 0.0 if abs(axes[1]) < 0.004 else axes[1]
-        self.msg.right_stick_horizontal = 0.0 if abs(axes[3]) < 0.004 else axes[3]
-        self.msg.right_stick_vertical = 0.0 if abs(axes[4]) < 0.004 else axes[4]
+        thr = float(self.get_parameter('axis_noise_threshold').value)
+        ax_lh = ax(int(self.get_parameter('axis_left_stick_horizontal_index').value))
+        ax_lv = ax(int(self.get_parameter('axis_left_stick_vertical_index').value))
+        ax_rh = ax(int(self.get_parameter('axis_right_stick_horizontal_index').value))
+        ax_rv = ax(int(self.get_parameter('axis_right_stick_vertical_index').value))
+
+        self.msg.left_stick_horizontal = 0.0 if abs(ax_lh) < thr else ax_lh
+        self.msg.left_stick_vertical = 0.0 if abs(ax_lv) < thr else ax_lv
+        self.msg.right_stick_horizontal = 0.0 if abs(ax_rh) < thr else ax_rh
+        self.msg.right_stick_vertical = 0.0 if abs(ax_rv) < thr else ax_rv
 
         self.msg.dpad_horizontal = hat_values[0]
         self.msg.dpad_vertical = hat_values[1]

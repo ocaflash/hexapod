@@ -36,6 +36,12 @@ RICHT_STICK_VERTICAL
 
 joystick.rx, joystick.ry not working with mode green
 
+## ROS2 параметры для DS4 (если индексы отличаются)
+- **`button_*_index`**: индексы кнопок (по умолчанию как выше)
+- **`axis_*_index`**: индексы осей
+- **`hat_index`**: индекс D-Pad hat (по умолчанию `0`)
+- **`axis_noise_threshold`**: мелкий порог подавления дрейфа (по умолчанию `0.004`)
+
 
 # pyjoystick (deprecated!)
 https://pypi.org/project/pyjoystick/

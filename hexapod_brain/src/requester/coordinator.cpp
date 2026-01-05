@@ -38,10 +38,17 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_activate_movement_waiting_ = false;
 
     isStanding_ = false;
+    node->declare_parameter("joystick_timeout_ms", 300);
+    joystickTimeout_ =
+        std::chrono::milliseconds(node->get_parameter("joystick_timeout_ms").get_parameter_value().get<int>());
+
     RCLCPP_INFO(node_->get_logger(), "Robot starting in LAYDOWN. Press OPTIONS or DPAD UP to stand.");
 }
 
 void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
+    lastJoystickMsgTime_ = node_->get_clock()->now();
+    joystickTimedOut_ = false;
+
     // Edge detection for buttons
     bool buttonStartPressed = msg.button_start && !prevButtonStart_;
     bool buttonSelectPressed = msg.button_select && !prevButtonSelect_;
@@ -264,6 +271,25 @@ void CCoordinator::requestTellSupplyVoltage(Prio prio) { (void)prio; }
 void CCoordinator::requestTellServoVoltage(Prio prio) { (void)prio; }
 void CCoordinator::requestTellServoTemperature(Prio prio) { (void)prio; }
 
-void CCoordinator::update() {}
+void CCoordinator::update() {
+    // Safety: if joystick messages stop (teleop crash/disconnect), stop MOVE.
+    // Without this, hexapod_movement stays in MOVE forever with last velocity.
+    if (!isStanding_) return;
+    if (actualMovementType_ != MovementRequest::MOVE) return;
+    if (joystickTimedOut_) return;
+    if (lastJoystickMsgTime_.nanoseconds() == 0) return;
+
+    const auto now = node_->get_clock()->now();
+    const auto age = now - lastJoystickMsgTime_;
+    const auto age_ms = std::chrono::milliseconds(age.nanoseconds() / 1000000);
+
+    if (age_ms > joystickTimeout_) {
+        joystickTimedOut_ = true;
+        actualVelocity_ = geometry_msgs::msg::Twist();  // zero
+        RCLCPP_WARN(node_->get_logger(), "Joystick timeout (%ld ms). Stopping movement.",
+                    static_cast<long>(age_ms.count()));
+        submitRequestMove(MovementRequest::MOVE_TO_STAND, 300, "", Prio::Highest);
+    }
+}
 
 }  // namespace brain

@@ -68,7 +68,6 @@ class CRequester {
     std::shared_ptr<CGaitController> gaitController_;
     std::shared_ptr<CActionPackagesParser> actionPackagesParser_;
 
-    rclcpp::Subscription<hexapod_interfaces::msg::MovementRequest>::SharedPtr subMovementRequest_;
     // rclcpp::Subscription<hexapod_interfaces::msg::ServoStatus>::SharedPtr subServoStatus_;
     uint8_t activeRequest_ = hexapod_interfaces::msg::MovementRequest::NO_REQUEST;
     std::unordered_map<uint8_t, std::function<void(const hexapod_interfaces::msg::MovementRequest&)>>

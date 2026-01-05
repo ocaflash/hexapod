@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32.hpp"
@@ -85,6 +86,10 @@ class CCoordinator : public IRequester {
     bool isStanding_ = false;
     bool isRelayOn_ = false;
     bool sticksWereNeutral_ = true;  // Track if sticks were in neutral before movement
+    bool joystickTimedOut_ = false;
+
+    rclcpp::Time lastJoystickMsgTime_{0, 0, RCL_ROS_TIME};
+    std::chrono::milliseconds joystickTimeout_{300};
 
     float param_velocity_factor_linear_ = 0.0;
     float param_velocity_factor_rotation_ = 0.0;

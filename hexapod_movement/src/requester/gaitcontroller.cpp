@@ -7,9 +7,9 @@
 CGaitController::CGaitController(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CKinematics> kinematics)
     : node_(node), kinematics_(kinematics) {
     FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME =
-        node->declare_parameter<double>("FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME", rclcpp::PARAMETER_DOUBLE);
-    GAIT_STEP_LENGTH = node->declare_parameter<double>("GAIT_STEP_LENGTH", rclcpp::PARAMETER_DOUBLE);
-    LEG_LIFT_HEIGHT = node->declare_parameter<double>("LEG_LIFT_HEIGHT", rclcpp::PARAMETER_DOUBLE);
+        node->declare_parameter<double>("FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME", 30.0);
+    GAIT_STEP_LENGTH = node->declare_parameter<double>("GAIT_STEP_LENGTH", 0.025);
+    LEG_LIFT_HEIGHT = node->declare_parameter<double>("LEG_LIFT_HEIGHT", 0.03);
 }
 
 void CGaitController::setPhaseNeutral() {
@@ -58,6 +58,8 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
     // the velocity is taken into account to calculate the gait cycle time with combined_mag
     double deltaPhase = FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME * combined_mag;
     phase_ += deltaPhase;
+    // Keep phase bounded to avoid numeric drift over long runs
+    phase_ = std::fmod(phase_, 2.0 * M_PI);
 
     // RCLCPP_INFO(node_->get_logger(), "CGaitController::updateTripodGait: phase: %.4f", phase_);
 
