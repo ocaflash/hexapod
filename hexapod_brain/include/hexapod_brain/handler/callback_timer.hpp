@@ -4,7 +4,9 @@
 
 #pragma once
 #include <chrono>
+#include <condition_variable>
 #include <functional>
+#include <mutex>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -16,19 +18,23 @@ class CCallbackTimer {
 
     void start(std::chrono::milliseconds intervalMilliseconds, std::function<void()> callback,
                bool singleShot = false) {
-        if (isRunning_) return;
-
-        isRunning_ = true;
+        stop();
+        {
+            std::lock_guard<std::mutex> lk(mtx_);
+            isRunning_ = true;
+        }
         timerThread_ = std::thread([this, intervalMilliseconds, callback, singleShot]() {
+            std::unique_lock<std::mutex> lk(mtx_);
             while (isRunning_) {
-                std::this_thread::sleep_for(intervalMilliseconds);
-                if (isRunning_) {
-                    callback();
-                    if (singleShot) isRunning_ = false;
+                if (cv_.wait_for(lk, intervalMilliseconds, [this]() { return !isRunning_; })) {
+                    break;
                 }
+                lk.unlock();
+                callback();
+                lk.lock();
+                if (singleShot) isRunning_ = false;
             }
         });
-        timerThread_.detach();
     }
 
     void start(uint32_t intervalMilliseconds, std::function<void()> callback, bool singleShot = false) {
@@ -42,10 +48,12 @@ class CCallbackTimer {
     }
 
     void stop() {
-        isRunning_ = false;
-        if (timerThread_.joinable()) {
-            timerThread_.join();
+        {
+            std::lock_guard<std::mutex> lk(mtx_);
+            isRunning_ = false;
         }
+        cv_.notify_all();
+        if (timerThread_.joinable()) timerThread_.join();
     }
 
     bool isRunning() {
@@ -59,6 +67,8 @@ class CCallbackTimer {
    private:
     std::thread timerThread_;
     std::atomic<bool> isRunning_;
+    std::mutex mtx_;
+    std::condition_variable cv_;
 };
 
 // int main() {

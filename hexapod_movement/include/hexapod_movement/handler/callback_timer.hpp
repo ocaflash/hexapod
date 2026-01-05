@@ -4,7 +4,9 @@
 
 #pragma once
 #include <chrono>
+#include <condition_variable>
 #include <functional>
+#include <mutex>
 #include <thread>
 
 class CCallbackTimer {
@@ -13,21 +15,28 @@ class CCallbackTimer {
     }
 
     void start(uint32_t intervalMilliseconds, std::function<void()> callback, bool singleShot = false) {
-        if (isRunning_) {
-            std::cout << "CCallbackTimer:: start | Timer is already running. Stopping it first." << std::endl;
-            stop();
+        stop();
+        {
+            std::lock_guard<std::mutex> lk(mtx_);
+            isRunning_ = true;
         }
-        isRunning_ = true;
         timerThread_ = std::thread([this, intervalMilliseconds, callback, singleShot]() {
+            std::unique_lock<std::mutex> lk(mtx_);
+            // wait_for wakes early on stop(), so we don't have detached threads lingering.
             while (isRunning_) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(intervalMilliseconds));
-                if (isRunning_) {
-                    if (singleShot) isRunning_ = false;
-                    callback();
+                if (cv_.wait_for(lk, std::chrono::milliseconds(intervalMilliseconds),
+                                 [this]() { return !isRunning_; })) {
+                    break;
+                }
+                // execute callback outside of the lock to avoid deadlocks
+                lk.unlock();
+                callback();
+                lk.lock();
+                if (singleShot) {
+                    isRunning_ = false;
                 }
             }
         });
-        timerThread_.detach();
     }
 
     void startWithoutCallback(uint32_t intervalMilliseconds) {
@@ -35,10 +44,12 @@ class CCallbackTimer {
     }
 
     void stop() {
-        isRunning_ = false;
-        if (timerThread_.joinable()) {
-            timerThread_.join();
+        {
+            std::lock_guard<std::mutex> lk(mtx_);
+            isRunning_ = false;
         }
+        cv_.notify_all();
+        if (timerThread_.joinable()) timerThread_.join();
     }
 
     bool isRunning() {
@@ -52,4 +63,6 @@ class CCallbackTimer {
    private:
     std::thread timerThread_;
     std::atomic<bool> isRunning_;
+    std::mutex mtx_;
+    std::condition_variable cv_;
 };
