@@ -5,6 +5,8 @@ node_servo_controller:
     SERIAL_PORT: '/dev/ttyS5'
     # Maestro UART is configured as Fixed baud 115200 (so do NOT send 0xAA baud-detect byte)
     MAESTRO_SEND_BAUD_DETECT_BYTE: false
+    # Increase if you still see Maestro serial errors (0x0001/0x0003) under heavy motion.
+    MAESTRO_INTER_COMMAND_DELAY_US: 1000
 
     # 18 servos for hexapod (6 legs × 3 joints, no head)
     SERVO_NAME: ['LEG_RIGHT_FRONT_COXA', 'LEG_RIGHT_FRONT_FEMUR', 'LEG_RIGHT_FRONT_TIBIA',

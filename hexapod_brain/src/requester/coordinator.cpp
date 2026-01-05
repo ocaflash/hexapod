@@ -46,6 +46,10 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     joystickStopDelay_ =
         std::chrono::milliseconds(node->get_parameter("joystick_stop_delay_ms").get_parameter_value().get<int>());
 
+    node->declare_parameter("move_to_stand_duration_ms", 600);
+    moveToStandDurationMs_ =
+        static_cast<uint32_t>(node->get_parameter("move_to_stand_duration_ms").get_parameter_value().get<int>());
+
     RCLCPP_INFO(node_->get_logger(), "Robot starting in LAYDOWN. Press OPTIONS or DPAD UP to stand.");
 }
 
@@ -208,7 +212,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         const auto age_ms = std::chrono::milliseconds(age.nanoseconds() / 1000000);
         if (age_ms > joystickStopDelay_) {
             sticksWereNeutral_ = true;
-            submitRequestMove(MovementRequest::MOVE_TO_STAND, 300, "", Prio::High);
+            submitRequestMove(MovementRequest::MOVE_TO_STAND, moveToStandDurationMs_, "", Prio::High);
         }
     }
 }

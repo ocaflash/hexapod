@@ -7,6 +7,7 @@ node_brain:
     joystick_deadzone: 0.3  # Increased deadzone to prevent drift
     joystick_timeout_ms: 300  # safety: stop MOVE if joystick_request stops arriving
     joystick_stop_delay_ms: 200  # debounce: require neutral sticks for this long before MOVE_TO_STAND
+    move_to_stand_duration_ms: 600  # smoother stop from gait to stand
     # Voltage/temperature not available on Maestro
     supply_voltage: 12.0
     supply_voltage_low: 10.5

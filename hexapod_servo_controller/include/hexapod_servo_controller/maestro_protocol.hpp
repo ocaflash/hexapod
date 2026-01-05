@@ -59,4 +59,5 @@ class MaestroProtocol {
     std::string deviceName_;
     int device_ = -1;
     bool isConnected_ = false;
+    uint32_t interCommandDelayUs_ = 1000;
 };

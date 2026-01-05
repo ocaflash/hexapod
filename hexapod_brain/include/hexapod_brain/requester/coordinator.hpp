@@ -92,6 +92,7 @@ class CCoordinator : public IRequester {
     rclcpp::Time lastNonNeutralTime_{0, 0, RCL_ROS_TIME};
     std::chrono::milliseconds joystickTimeout_{300};
     std::chrono::milliseconds joystickStopDelay_{200};
+    uint32_t moveToStandDurationMs_{600};
 
     float param_velocity_factor_linear_ = 0.0;
     float param_velocity_factor_rotation_ = 0.0;

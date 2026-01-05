@@ -8,7 +8,11 @@
 #include <unistd.h>
 
 MaestroProtocol::MaestroProtocol(std::shared_ptr<rclcpp::Node> node, const std::string& deviceName)
-    : node_(node), deviceName_(deviceName) {}
+    : node_(node), deviceName_(deviceName) {
+    node_->declare_parameter<int>("MAESTRO_INTER_COMMAND_DELAY_US", 1000);
+    interCommandDelayUs_ = static_cast<uint32_t>(
+        node_->get_parameter("MAESTRO_INTER_COMMAND_DELAY_US").get_parameter_value().get<int>());
+}
 
 MaestroProtocol::~MaestroProtocol() {
     closeConnection();
@@ -114,7 +118,7 @@ bool MaestroProtocol::setTarget(uint8_t channel, uint16_t target) {
     };
     
     bool result = writeBytes(cmd, sizeof(cmd));
-    usleep(200);  // 0.2ms delay between commands to prevent serial overrun
+    usleep(interCommandDelayUs_);  // delay between commands to reduce serial overrun/errors
     return result;
 }
 
