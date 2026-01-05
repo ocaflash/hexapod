@@ -109,7 +109,9 @@ bool MaestroProtocol::setTarget(uint8_t channel, uint16_t target) {
         static_cast<uint8_t>((target >> 7) & 0x7F)
     };
     
-    return writeBytes(cmd, sizeof(cmd));
+    bool result = writeBytes(cmd, sizeof(cmd));
+    usleep(200);  // 0.2ms delay between commands to prevent serial overrun
+    return result;
 }
 
 bool MaestroProtocol::setTargetMicroseconds(uint8_t channel, uint16_t us) {

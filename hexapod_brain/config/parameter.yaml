@@ -2,8 +2,8 @@ node_brain:
   ros__parameters:
     autostart_listening: false
     activate_movement_waiting: false  # Don't auto-move when idle
-    velocity_factor_linear: 0.1
-    velocity_factor_rotation: 0.1
+    velocity_factor_linear: 0.03
+    velocity_factor_rotation: 0.03
     joystick_deadzone: 0.3  # Increased deadzone to prevent drift
     # Voltage/temperature not available on Maestro
     supply_voltage: 12.0
