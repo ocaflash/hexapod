@@ -83,18 +83,29 @@ void CRequester::requestMoveToStand(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::MOVE_TO_STAND;
 
     kinematics_->setHead(0.0, 0.0);
-    // set the legs to the standing position
-    //TODO improve the calculation of the lifted legs
-    bool tripodFirstGroupLegsLifted = kinematics_->getLegsPositions().at(ELegIndex::LeftFront).z >
-                                      kinematics_->getLegsStandingPositions().at(ELegIndex::LeftFront).z;
-    gaitController_->liftLegsTripodGroup(tripodFirstGroupLegsLifted);
-    actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
-                              std::make_shared<CRequestHead>(kinematics_->getHead()),
-                              std::make_shared<CRequestSendDuration>(msg.duration_ms / 2.0)});
-    // set the legs to the standing position
-    kinematics_->moveBody(kinematics_->getLegsStandingPositions());
-    actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
-                              std::make_shared<CRequestSendDuration>(msg.duration_ms / 2.0)});
+    // Smoothly interpolate from current feet positions to standing positions.
+    // This avoids abrupt tripod switching that can cause "twitching/convulsions" after fast stop.
+    const auto current = kinematics_->getLegsPositions();
+    const auto standing = kinematics_->getLegsStandingPositions();
+
+    constexpr int STEPS = 4;
+    const uint32_t step_ms = std::max<uint32_t>(1, msg.duration_ms / STEPS);
+
+    for (int i = 1; i <= STEPS; ++i) {
+        const double a = static_cast<double>(i) / static_cast<double>(STEPS);
+        std::map<ELegIndex, CPosition> target;
+        for (const auto& [legIndex, curPos] : current) {
+            const auto& st = standing.at(legIndex);
+            target[legIndex] = CPosition(curPos.x + (st.x - curPos.x) * a,
+                                         curPos.y + (st.y - curPos.y) * a,
+                                         curPos.z + (st.z - curPos.z) * a);
+        }
+
+        kinematics_->moveBody(target);
+        actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
+                                  std::make_shared<CRequestHead>(kinematics_->getHead()),
+                                  std::make_shared<CRequestSendDuration>(step_ms)});
+    }
 }
 
 void CRequester::requestWaiting(const MovementRequest& msg) {
