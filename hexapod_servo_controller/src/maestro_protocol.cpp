@@ -57,13 +57,17 @@ bool MaestroProtocol::triggerConnection() {
 
     tcflush(device_, TCIOFLUSH);
     usleep(50000);  // 50ms delay after port setup
-    
-    // Send baud rate indication byte (0xAA) for auto-detect mode
-    // This is required when Maestro is in "UART, detect baud rate" mode
-    uint8_t baudByte = 0xAA;
-    write(device_, &baudByte, 1);
-    tcdrain(device_);
-    usleep(10000);  // 10ms delay for Maestro to detect baud rate
+
+    // Send baud-detect byte (0xAA) ONLY if Maestro is configured for "UART, detect baud rate".
+    // For fixed-baud UART this can cause serial format errors (e.g. error mask 0x0003).
+    const bool sendBaudDetectByte =
+        node_->declare_parameter<bool>("MAESTRO_SEND_BAUD_DETECT_BYTE", false);
+    if (sendBaudDetectByte) {
+        uint8_t baudByte = 0xAA;
+        write(device_, &baudByte, 1);
+        tcdrain(device_);
+        usleep(10000);  // 10ms delay for Maestro to detect baud rate
+    }
     
     isConnected_ = true;
     

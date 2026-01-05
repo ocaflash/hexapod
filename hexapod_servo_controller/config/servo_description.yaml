@@ -3,6 +3,8 @@ node_servo_controller:
     # Pololu Mini Maestro 18-Channel on OrangePi Zero 2W
     # UART5 on OrangePi Zero 2W
     SERIAL_PORT: '/dev/ttyS5'
+    # Maestro UART is configured as Fixed baud 115200 (so do NOT send 0xAA baud-detect byte)
+    MAESTRO_SEND_BAUD_DETECT_BYTE: false
 
     # 18 servos for hexapod (6 legs × 3 joints, no head)
     SERVO_NAME: ['LEG_RIGHT_FRONT_COXA', 'LEG_RIGHT_FRONT_FEMUR', 'LEG_RIGHT_FRONT_TIBIA',
