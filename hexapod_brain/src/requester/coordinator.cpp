@@ -259,6 +259,13 @@ void CCoordinator::requestWaiting(Prio prio) { (void)prio; }
 void CCoordinator::submitRequestMove(uint32_t movementType, uint32_t duration_ms, std::string comment,
                                      Prio prio, hexapod_interfaces::msg::Pose body) {
     (void)comment;
+
+    // If we are about to execute a non-MOVE request, clear any background MOVE so it cannot
+    // automatically resume after the higher-priority request finishes.
+    // This is crucial because Prio::Background is "sticky" by design in CActionPlanner.
+    if (movementType != MovementRequest::MOVE) {
+        actionPlanner_->request({}, Prio::Background);
+    }
     
     auto request = MovementRequest();
     request.type = movementType;
