@@ -13,8 +13,7 @@ import rclpy
 from rclpy.node import Node
 from hexapod_interfaces.msg import JoystickRequest
 
-INTERVAL = 100  # milliseconds
-RECONNECT_INTERVAL = 2000  # milliseconds
+INTERVAL = 50  # milliseconds - publish rate ~20Hz
 
 class NodeTeleop(Node):
     def __init__(self):
@@ -22,6 +21,7 @@ class NodeTeleop(Node):
         self.get_logger().info('starting node_teleop')
         self.msg = JoystickRequest()
         self.joystick = None
+        self.connected = False
 
         pygame.init()
         pygame.joystick.init()
@@ -32,61 +32,43 @@ class NodeTeleop(Node):
         self.event_thread = threading.Thread(target=self.event_loop, daemon=True)
         self.event_thread.start()
 
-    def try_connect_joystick(self):
-        """Try to connect to a joystick, return True if successful"""
-        pygame.joystick.quit()
-        pygame.joystick.init()
-        
-        if pygame.joystick.get_count() > 0:
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-            self.get_logger().info(f"Connected to Joystick: {self.joystick.get_name()}")
-            return True
-        return False
-
     def event_loop(self):
         while self.running and rclpy.ok():
-            # Try to connect if no joystick
-            if self.joystick is None:
-                if self.try_connect_joystick():
-                    pass
-                else:
-                    pygame.time.wait(RECONNECT_INTERVAL)
-                    continue
-
-            # Check if joystick still connected
-            pygame.joystick.quit()
-            pygame.joystick.init()
-            if pygame.joystick.get_count() == 0:
-                self.get_logger().warn("Joystick disconnected, waiting for reconnect...")
-                self.joystick = None
-                pygame.time.wait(RECONNECT_INTERVAL)
-                continue
+            pygame.event.pump()
             
-            # Reinit joystick after quit/init
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-
-            for event in pygame.event.get():
-                self.handle_event(event)
+            # Check for joystick connect/disconnect
+            current_count = pygame.joystick.get_count()
+            
+            if current_count > 0 and not self.connected:
+                # Joystick connected
+                self.joystick = pygame.joystick.Joystick(0)
+                self.joystick.init()
+                self.connected = True
+                self.get_logger().info(f"Connected to Joystick: {self.joystick.get_name()}")
+            elif current_count == 0 and self.connected:
+                # Joystick disconnected
+                self.connected = False
+                self.joystick = None
+                self.get_logger().warn("Joystick disconnected")
+                pygame.joystick.quit()
+                pygame.joystick.init()
+            
+            # Publish data if connected
+            if self.connected and self.joystick:
+                self.publish_joystick_data()
+            
             pygame.time.wait(INTERVAL)
 
     def handle_event(self, event):
-        if self.joystick is None:
-            return
-        if event.type not in (pygame.JOYBUTTONDOWN, pygame.JOYAXISMOTION, pygame.JOYHATMOTION):
-            return
-        self.publish_joystick_data()
+        pass  # Not used anymore, publishing continuously
 
     def publish_joystick_data(self):
-        if self.joystick is None:
+        try:
+            axes = [self.joystick.get_axis(i) for i in range(self.joystick.get_numaxes())]
+            buttons = [self.joystick.get_button(i) for i in range(self.joystick.get_numbuttons())]
+            hat_values = self.joystick.get_hat(0)
+        except pygame.error:
             return
-            
-        pygame.event.pump()
-
-        axes = [self.joystick.get_axis(i) for i in range(self.joystick.get_numaxes())]
-        buttons = [self.joystick.get_button(i) for i in range(self.joystick.get_numbuttons())]
-        hat_values = self.joystick.get_hat(0)
 
         self.msg.button_a = bool(buttons[2])
         self.msg.button_b = bool(buttons[1])
