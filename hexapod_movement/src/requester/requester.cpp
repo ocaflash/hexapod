@@ -4,11 +4,22 @@
 
 #include "requester/requester.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 using namespace hexapod_interfaces::msg;
 using std::placeholders::_1;
 
 CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActionExecutor> actionExecutor)
     : node_(node), actionExecutor_(actionExecutor) {
+    node_->declare_parameter("cmd_vel_timeout_ms", 400);
+    node_->declare_parameter("cmd_vel_deadzone_start", 0.15);
+    node_->declare_parameter("cmd_vel_deadzone_stop", 0.05);
+    cmdVelTimeout_ =
+        std::chrono::milliseconds(node_->get_parameter("cmd_vel_timeout_ms").get_parameter_value().get<int>());
+    cmdVelDeadzoneStart_ = node_->get_parameter("cmd_vel_deadzone_start").get_parameter_value().get<double>();
+    cmdVelDeadzoneStop_ = node_->get_parameter("cmd_vel_deadzone_stop").get_parameter_value().get<double>();
+
     kinematics_ = std::make_shared<CKinematics>(node);
     gaitController_ = std::make_shared<CGaitController>(node, kinematics_);
     actionPackagesParser_ = std::make_shared<CActionPackagesParser>(node);
@@ -17,6 +28,8 @@ CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActi
 
     m_subMovementRequest = node_->create_subscription<MovementRequest>(
         "movement_request", 10, std::bind(&CRequester::onMovementRequest, this, _1));
+    m_subCmdVel = node_->create_subscription<geometry_msgs::msg::Twist>(
+        "cmd_vel", 10, std::bind(&CRequester::onCmdVel, this, _1));
 
     // Initialize robot to laydown position on startup
     RCLCPP_INFO(node_->get_logger(), "Initializing robot to LAYDOWN position...");
@@ -399,7 +412,47 @@ void CRequester::onMovementRequest(const MovementRequest& msg) {
     requestHandlers_[msg.type](msg);
 }
 
+void CRequester::onCmdVel(const geometry_msgs::msg::Twist& msg) {
+    const double magnitude = std::max({std::abs(msg.linear.x), std::abs(msg.linear.y), std::abs(msg.angular.z)});
+    const double deadzone = (activeRequest_ == MovementRequest::MOVE) ? cmdVelDeadzoneStop_ : cmdVelDeadzoneStart_;
+    const bool neutral = magnitude < deadzone;
+
+    if (neutral) {
+        if (!cmdVelNeutral_ && activeRequest_ == MovementRequest::MOVE) {
+            MovementRequest stopMsg;
+            stopMsg.type = MovementRequest::MOVE_TO_STAND;
+            stopMsg.duration_ms = 300;
+            stopMsg.name = "MOVE_TO_STAND";
+            requestMoveToStand(stopMsg);
+        }
+        cmdVelNeutral_ = true;
+        cmdVelActive_ = false;
+        return;
+    }
+
+    cmdVelNeutral_ = false;
+    cmdVelActive_ = true;
+    lastCmdVelTime_ = node_->now();
+
+    MovementRequest moveMsg;
+    moveMsg.type = MovementRequest::MOVE;
+    moveMsg.velocity = msg;
+    moveMsg.name = "MOVE";
+    moveMsg.duration_ms = 0;
+    requestMove(moveMsg);
+}
+
 void CRequester::update(std::chrono::milliseconds timeslice) {
+    if (cmdVelActive_ && (node_->now() - lastCmdVelTime_) > rclcpp::Duration(cmdVelTimeout_)) {
+        MovementRequest stopMsg;
+        stopMsg.type = MovementRequest::MOVE_TO_STAND;
+        stopMsg.duration_ms = 300;
+        stopMsg.name = "MOVE_TO_STAND";
+        requestMoveToStand(stopMsg);
+        cmdVelActive_ = false;
+        cmdVelNeutral_ = true;
+    }
+
     // the update is only relevant if the movement request MovementRequest::MOVE is active
     if (activeRequest_ != MovementRequest::MOVE) {
         return;

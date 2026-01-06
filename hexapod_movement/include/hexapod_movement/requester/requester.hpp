@@ -32,9 +32,11 @@ class CRequester {
 
     // void onServoStatus(const hexapod_interfaces::msg::ServoStatus& msg);
     void onMovementRequest(const hexapod_interfaces::msg::MovementRequest& msg);
+    void onCmdVel(const geometry_msgs::msg::Twist& msg);
 
    private:
     rclcpp::Subscription<hexapod_interfaces::msg::MovementRequest>::SharedPtr m_subMovementRequest;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_subCmdVel;
 
     void initializeRequestHandlers();
     void requestLayDown(const hexapod_interfaces::msg::MovementRequest& msg);
@@ -76,4 +78,10 @@ class CRequester {
     hexapod_interfaces::msg::Pose poseBody_;
     bool transitionToMoveActive_ = false;
     bool transitionFromMoveActive_ = false;
+    rclcpp::Time lastCmdVelTime_;
+    std::chrono::milliseconds cmdVelTimeout_{400};
+    double cmdVelDeadzoneStart_ = 0.15;
+    double cmdVelDeadzoneStop_ = 0.05;
+    bool cmdVelActive_ = false;
+    bool cmdVelNeutral_ = true;
 };
