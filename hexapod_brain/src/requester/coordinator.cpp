@@ -225,6 +225,16 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
         const auto age_ms = std::chrono::milliseconds(age.nanoseconds() / 1000000);
         if (age_ms > joystickStopDelay_) {
             sticksWereNeutral_ = true;
+            RCLCPP_WARN(node_->get_logger(),
+                        "Stopping MOVE: sticks neutral for %ld ms (stop_delay=%ld ms, dz_start=%.3f dz_stop=%.3f). "
+                        "sticks: LV=%.3f LH=%.3f RV=%.3f RH=%.3f",
+                        static_cast<long>(age_ms.count()), static_cast<long>(joystickStopDelay_.count()),
+                        static_cast<double>(param_joystick_deadzone_start_),
+                        static_cast<double>(param_joystick_deadzone_stop_),
+                        static_cast<double>(msg.left_stick_vertical),
+                        static_cast<double>(msg.left_stick_horizontal),
+                        static_cast<double>(msg.right_stick_vertical),
+                        static_cast<double>(msg.right_stick_horizontal));
             submitRequestMove(MovementRequest::MOVE_TO_STAND, moveToStandDurationMs_, "", Prio::High);
         }
     }

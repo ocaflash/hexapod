@@ -8,6 +8,7 @@ import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame
 import threading
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -42,6 +43,14 @@ class NodeTeleop(Node):
 
         self.declare_parameter('hat_index', 0)
         self.declare_parameter('axis_noise_threshold', 0.004)
+        # DS4 BT/SDL can occasionally report all-zero axes for a short burst while stick is held.
+        # This causes false "neutral" detection downstream (MOVE->MOVE_TO_STAND). Hold last good value briefly.
+        self.declare_parameter('axis_zero_glitch_hold_ms', 400)
+        self.declare_parameter('axis_zero_glitch_neutral_threshold', 0.05)
+
+        self._last_good_axes = {'lh': 0.0, 'lv': 0.0, 'rh': 0.0, 'rv': 0.0}
+        self._last_good_axes_time = time.monotonic()
+        self._last_glitch_log_time = 0.0
 
         pygame.init()
         pygame.joystick.init()
@@ -125,10 +134,39 @@ class NodeTeleop(Node):
         ax_rh = ax(int(self.get_parameter('axis_right_stick_horizontal_index').value))
         ax_rv = ax(int(self.get_parameter('axis_right_stick_vertical_index').value))
 
-        self.msg.left_stick_horizontal = 0.0 if abs(ax_lh) < thr else ax_lh
-        self.msg.left_stick_vertical = 0.0 if abs(ax_lv) < thr else ax_lv
-        self.msg.right_stick_horizontal = 0.0 if abs(ax_rh) < thr else ax_rh
-        self.msg.right_stick_vertical = 0.0 if abs(ax_rv) < thr else ax_rv
+        lh = 0.0 if abs(ax_lh) < thr else ax_lh
+        lv = 0.0 if abs(ax_lv) < thr else ax_lv
+        rh = 0.0 if abs(ax_rh) < thr else ax_rh
+        rv = 0.0 if abs(ax_rv) < thr else ax_rv
+
+        neutral_thr = float(self.get_parameter('axis_zero_glitch_neutral_threshold').value)
+        hold_s = float(self.get_parameter('axis_zero_glitch_hold_ms').value) / 1000.0
+        now_m = time.monotonic()
+
+        is_near_zero = (abs(lh) < neutral_thr and abs(lv) < neutral_thr and
+                        abs(rh) < neutral_thr and abs(rv) < neutral_thr)
+        was_moving = (abs(self._last_good_axes['lh']) >= neutral_thr or
+                      abs(self._last_good_axes['lv']) >= neutral_thr or
+                      abs(self._last_good_axes['rh']) >= neutral_thr or
+                      abs(self._last_good_axes['rv']) >= neutral_thr)
+
+        if is_near_zero and was_moving and (now_m - self._last_good_axes_time) < hold_s:
+            # Treat as glitch: keep last good values.
+            lh = self._last_good_axes['lh']
+            lv = self._last_good_axes['lv']
+            rh = self._last_good_axes['rh']
+            rv = self._last_good_axes['rv']
+            if (now_m - self._last_glitch_log_time) > 1.0:
+                self._last_glitch_log_time = now_m
+                self.get_logger().warn("Axis zero-glitch detected; holding last axes briefly (BT/SDL jitter).")
+        else:
+            self._last_good_axes = {'lh': lh, 'lv': lv, 'rh': rh, 'rv': rv}
+            self._last_good_axes_time = now_m
+
+        self.msg.left_stick_horizontal = lh
+        self.msg.left_stick_vertical = lv
+        self.msg.right_stick_horizontal = rh
+        self.msg.right_stick_vertical = rv
 
         self.msg.dpad_horizontal = hat_values[0]
         self.msg.dpad_vertical = hat_values[1]

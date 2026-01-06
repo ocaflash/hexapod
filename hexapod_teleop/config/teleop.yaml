@@ -24,4 +24,9 @@ node_teleop:
     # Small deadband to suppress jitter reported by SDL for DS4.
     axis_noise_threshold: 0.004
 
+    # If DS4 over BT occasionally "drops" all axes to ~0 for a short burst while held,
+    # this prevents false neutral detection downstream.
+    axis_zero_glitch_hold_ms: 400
+    axis_zero_glitch_neutral_threshold: 0.05
+
 
