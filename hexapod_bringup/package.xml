@@ -11,6 +11,7 @@
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>joy</exec_depend>
   <exec_depend>teleop_twist_joy</exec_depend>
+  <exec_depend>hexapod_cmdvel_bridge</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

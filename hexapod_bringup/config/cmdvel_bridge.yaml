@@ -1,0 +1,36 @@
+cmdvel_bridge:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    joy_topic: /joy
+    movement_request_topic: /movement_request
+
+    linear_x_limit: 0.8
+    linear_y_limit: 0.8
+    angular_z_limit: 2.0
+
+    deadzone_start: 0.05
+    deadzone_stop: 0.02
+    stop_delay_ms: 200
+    timeout_ms: 500
+    move_to_stand_duration_ms: 300
+
+    stand_duration_ms: 2000
+    laydown_duration_ms: 2000
+    watch_duration_ms: 3000
+    high_five_duration_ms: 3000
+    clap_duration_ms: 3000
+    transport_duration_ms: 2000
+    look_left_duration_ms: 2000
+    look_right_duration_ms: 2000
+
+    button_start_index: 9
+    button_a_index: 2
+    button_b_index: 1
+    button_x_index: 3
+    button_y_index: 0
+    button_l1_index: 4
+    button_r1_index: 5
+
+    dpad_vertical_axis_index: 7
+    dpad_horizontal_axis_index: 6
+    dpad_axis_threshold: 0.5
