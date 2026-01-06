@@ -5,6 +5,8 @@ node_brain:
     velocity_factor_linear: 0.03
     velocity_factor_rotation: 0.03
     joystick_deadzone: 0.3  # Increased deadzone to prevent drift
+    joystick_deadzone_start: 0.3  # threshold to START MOVE from stand
+    joystick_deadzone_stop: 0.15  # lower threshold to STAY in MOVE (hysteresis vs jitter)
     joystick_timeout_ms: 300  # safety: stop MOVE if joystick_request stops arriving
     joystick_stop_delay_ms: 200  # debounce: require neutral sticks for this long before MOVE_TO_STAND
     move_to_stand_duration_ms: 600  # smoother stop from gait to stand

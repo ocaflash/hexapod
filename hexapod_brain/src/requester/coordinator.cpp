@@ -33,6 +33,15 @@ CCoordinator::CCoordinator(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<C
     param_joystick_deadzone_ =
         node->get_parameter("joystick_deadzone").get_parameter_value().get<double>();
 
+    // Hysteresis: separate thresholds to START vs STOP movement.
+    // This avoids spurious MOVE->MOVE_TO_STAND when stick value jitters near the threshold (common on BT DS4).
+    node->declare_parameter("joystick_deadzone_start", param_joystick_deadzone_);
+    node->declare_parameter("joystick_deadzone_stop", 0.15);
+    param_joystick_deadzone_start_ =
+        node->get_parameter("joystick_deadzone_start").get_parameter_value().get<double>();
+    param_joystick_deadzone_stop_ =
+        node->get_parameter("joystick_deadzone_stop").get_parameter_value().get<double>();
+
     node->declare_parameter("autostart_listening", false);
     node->declare_parameter("activate_movement_waiting", false);
     param_activate_movement_waiting_ = false;
@@ -163,14 +172,18 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     
     // Left stick - movement
     bool hasInput = false;
-    if (std::abs(msg.left_stick_vertical) > param_joystick_deadzone_) {
+
+    const float dz = (actualMovementType_ == MovementRequest::MOVE) ? param_joystick_deadzone_stop_
+                                                                    : param_joystick_deadzone_start_;
+
+    if (std::abs(msg.left_stick_vertical) > dz) {
         actualVelocity_.linear.x = -msg.left_stick_vertical * param_velocity_factor_linear_;
         hasInput = true;
     } else {
         actualVelocity_.linear.x = 0.0;
     }
 
-    if (std::abs(msg.left_stick_horizontal) > param_joystick_deadzone_) {
+    if (std::abs(msg.left_stick_horizontal) > dz) {
         actualVelocity_.linear.y = msg.left_stick_horizontal * param_velocity_factor_linear_;
         hasInput = true;
     } else {
@@ -178,7 +191,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
     }
 
     // Right stick horizontal - rotation
-    if (std::abs(msg.right_stick_horizontal) > param_joystick_deadzone_) {
+    if (std::abs(msg.right_stick_horizontal) > dz) {
         actualVelocity_.angular.z = msg.right_stick_horizontal * param_velocity_factor_rotation_;
         hasInput = true;
     } else {
@@ -187,7 +200,7 @@ void CCoordinator::joystickRequestReceived(const JoystickRequest& msg) {
 
     // Right stick vertical - body height
     hexapod_interfaces::msg::Pose body;
-    if (std::abs(msg.right_stick_vertical) > param_joystick_deadzone_) {
+    if (std::abs(msg.right_stick_vertical) > dz) {
         body.position.z = msg.right_stick_vertical * 0.04;
     }
 

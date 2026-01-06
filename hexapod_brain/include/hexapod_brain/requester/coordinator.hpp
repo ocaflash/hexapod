@@ -97,6 +97,8 @@ class CCoordinator : public IRequester {
     float param_velocity_factor_linear_ = 0.0;
     float param_velocity_factor_rotation_ = 0.0;
     float param_joystick_deadzone_ = 0.0;
+    float param_joystick_deadzone_start_ = 0.0;
+    float param_joystick_deadzone_stop_ = 0.0;
     float param_activate_movement_waiting_ = false;
 
     std::map<uint32_t, std::string> movementTypeName_ = {
