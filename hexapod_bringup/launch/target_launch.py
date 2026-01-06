@@ -15,7 +15,7 @@ def generate_launch_description():
         FindPackageShare("hexapod_movement"), '/launch', '/movement_launch.py'])))
 
     ld.add_action(IncludeLaunchDescription(PythonLaunchDescriptionSource([
-        FindPackageShare("hexapod_bringup"), '/launch', '/joy_teleop_launch.py'])))
+        FindPackageShare("hexapod_teleop"), '/launch', '/teleop_launch.py'])))
 
     delay_brain_launch = launch.actions.TimerAction(period=3.0, actions=[
         IncludeLaunchDescription(PythonLaunchDescriptionSource([
