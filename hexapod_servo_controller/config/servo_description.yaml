@@ -6,7 +6,7 @@ node_servo_controller:
     # Maestro UART is configured as Fixed baud 115200 (so do NOT send 0xAA baud-detect byte)
     MAESTRO_SEND_BAUD_DETECT_BYTE: false
     # Delay between servo commands in microseconds (increase if serial errors occur)
-    MAESTRO_INTER_COMMAND_DELAY_US: 2000
+    MAESTRO_INTER_COMMAND_DELAY_US: 3000
 
     # 18 servos for hexapod (6 legs × 3 joints, no head)
     SERVO_NAME: ['LEG_RIGHT_FRONT_COXA', 'LEG_RIGHT_FRONT_FEMUR', 'LEG_RIGHT_FRONT_TIBIA',

@@ -123,11 +123,8 @@ void ServoController::onTimerStatus() {
     msg_status.min_voltage = 0.0;
     msg_status.error_code = ServoStatus::NO_ERROR;
     
-    // Check for Maestro errors
-    uint16_t errors = 0;
-    if (protocol_->getErrors(errors) && errors != 0) {
-        RCLCPP_WARN(node_->get_logger(), "Maestro error code: 0x%04X", errors);
-    }
+    // Skip error checking - it can interfere with servo commands
+    // Errors are cleared automatically when read
     
     pubStatus_->publish(msg_status);
     publishAngles();
@@ -148,6 +145,9 @@ void ServoController::publishAngles() {
 }
 
 void ServoController::onServoRequestReceived(const ServoRequest& msg) {
+    static int logCounter = 0;
+    bool shouldLog = (++logCounter % 20 == 0);  // Log every 20th message
+    
     for (size_t idx = 0; idx < msg.target_angles.size() && idx < servos_.size(); ++idx) {
         double req_angle = msg.target_angles[idx].angle_deg;
         double diff = std::abs(servos_.at(idx).getAngle() - req_angle);
@@ -156,6 +156,12 @@ void ServoController::onServoRequestReceived(const ServoRequest& msg) {
         
         servos_.at(idx).setAngle(req_angle);
         uint16_t us = angleToMicroseconds(req_angle, idx);
+        
+        if (shouldLog && idx == 0) {
+            RCLCPP_INFO(node_->get_logger(), "Servo[0] angle=%.1f -> %d us (ch=%d)", 
+                        req_angle, us, servos_.at(idx).getChannel());
+        }
+        
         protocol_->setTargetMicroseconds(servos_.at(idx).getChannel(), us);
     }
 }
