@@ -438,6 +438,9 @@ void CRequester::requestTestLegs(const MovementRequest& msg) {
 // public methods for the CRequester class
 // ------------------------------------------------------------------------------------------------------------
 void CRequester::onMovementRequest(const MovementRequest& msg) {
+    RCLCPP_INFO(node_->get_logger(), "MovementRequest: type=%u name=%s duration=%u",
+                static_cast<unsigned>(msg.type), msg.name.c_str(), static_cast<unsigned>(msg.duration_ms));
+
     // check that the new request is inside the requestHandlers_ map
     if (requestHandlers_.find(msg.type) == requestHandlers_.end()) {
         RCLCPP_ERROR_STREAM(node_->get_logger(),

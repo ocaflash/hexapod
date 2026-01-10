@@ -73,6 +73,7 @@ class CmdVelBridge(Node):
         self.declare_parameter("trigger_deadzone", 0.02)
         self.declare_parameter("slow_scale", 0.5)
         self.declare_parameter("turbo_scale", 1.5)
+        self.declare_parameter("turn_button_angular_z", 1.2)
 
         self.publisher_ = self.create_publisher(
             MovementRequest,
@@ -118,6 +119,8 @@ class CmdVelBridge(Node):
         # Last trigger values (0..1)
         self._l2 = 0.0
         self._r2 = 0.0
+        self._l1_held = False
+        self._r1_held = False
 
     def on_cmd_vel(self, msg: Twist) -> None:
         now = self.get_clock().now()
@@ -128,9 +131,15 @@ class CmdVelBridge(Node):
             return
 
         speed_scale = self._speed_scale()
-        linear_x = self._clamp(msg.linear.x, self._get_double("linear_x_limit") * speed_scale)
-        linear_y = self._clamp(msg.linear.y, self._get_double("linear_y_limit") * speed_scale)
-        angular_z = self._clamp(msg.angular.z, self._get_double("angular_z_limit") * speed_scale)
+        linear_x = self._clamp(msg.linear.x * speed_scale, self._get_double("linear_x_limit"))
+        linear_y = self._clamp(msg.linear.y * speed_scale, self._get_double("linear_y_limit"))
+        angular_z = self._clamp(msg.angular.z * speed_scale, self._get_double("angular_z_limit"))
+
+        # L1/R1: turn in place (override yaw while held)
+        if self._l1_held and not self._r1_held:
+            angular_z = abs(self._get_double("turn_button_angular_z"))
+        elif self._r1_held and not self._l1_held:
+            angular_z = -abs(self._get_double("turn_button_angular_z"))
 
         deadzone = self._get_double("deadzone_stop") if self.movement_active_ else self._get_double("deadzone_start")
         linear_x = self._apply_deadzone(linear_x, deadzone)
@@ -178,6 +187,10 @@ class CmdVelBridge(Node):
         r1 = btn(self._get_int("button_r1_index"))
         l2_btn = btn(self._get_int("button_l2_index"))
         r2_btn = btn(self._get_int("button_r2_index"))
+
+        # Keep held-state for turn buttons
+        self._l1_held = l1
+        self._r1_held = r1
 
         dpad_up, dpad_down = self._dpad_vertical(axes)
 
@@ -282,22 +295,7 @@ class CmdVelBridge(Node):
             self.last_cmd_vel_time_ = None
             self._lock(self._get_int("transport_duration_ms"))
             return
-        if pressed.l1:
-            self.get_logger().info("L1: Look Left")
-            self._publish_request(MovementRequest.LOOK_LEFT, self._get_int("look_left_duration_ms"))
-            self.movement_active_ = False
-            self.last_non_neutral_time_ = None
-            self.last_cmd_vel_time_ = None  # Reset timeout
-            self._lock(self._get_int("look_left_duration_ms"))
-            return
-        if pressed.r1:
-            self.get_logger().info("R1: Look Right")
-            self._publish_request(MovementRequest.LOOK_RIGHT, self._get_int("look_right_duration_ms"))
-            self.movement_active_ = False
-            self.last_non_neutral_time_ = None
-            self.last_cmd_vel_time_ = None  # Reset timeout
-            self._lock(self._get_int("look_right_duration_ms"))
-            return
+        # L1/R1 are handled as "turn while held" in on_cmd_vel (no discrete action request).
 
     def on_timer(self) -> None:
         if not self.is_standing_ or not self.movement_active_:

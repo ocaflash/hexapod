@@ -24,12 +24,13 @@ cmdvel_bridge:
     look_right_duration_ms: 2000
 
     button_start_index: 9
-    # DualShock 4 default mapping (SDL2-style, matches `hexapod_teleop/config/teleop.yaml`)
-    # If your indices differ on your OS/driver, override these values.
-    button_a_index: 2
-    button_b_index: 1
-    button_x_index: 3
-    button_y_index: 0
+    # DS4 mapping seen on many Linux joy_node setups:
+    # 0 = Cross (✕), 1 = Circle (○), 2 = Triangle (△), 3 = Square (□)
+    # If your mapping differs, tweak these 4 numbers.
+    button_a_index: 0   # Cross (✕)
+    button_b_index: 1   # Circle (○)
+    button_y_index: 2   # Triangle (△)
+    button_x_index: 3   # Square (□)
     button_l1_index: 4
     button_r1_index: 5
     button_l2_index: 6
