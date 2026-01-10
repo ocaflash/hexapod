@@ -37,11 +37,10 @@ node_movement:
     STANDING_FOOT_POS_Y: [ 0.092,  0.130,  0.092, -0.092, -0.130, -0.092]
     STANDING_FOOT_POS_Z: [-0.050, -0.050, -0.050, -0.050, -0.050, -0.050]
 
-    # Reference foot positions for lay down (body lower to ground)
-    # Z less negative = body closer to ground
-    LAYDOWN_FOOT_POS_X: [ 0.092,  0.000, -0.092,  0.092,  0.000, -0.092]
+    # Reference foot positions for lay down (same as INIT - robot resting position)
+    LAYDOWN_FOOT_POS_X: [ 0.092,    0.0, -0.092,  0.092,    0.0, -0.092]
     LAYDOWN_FOOT_POS_Y: [ 0.092,  0.130,  0.092, -0.092, -0.130, -0.092]
-    LAYDOWN_FOOT_POS_Z: [-0.020, -0.020, -0.020, -0.020, -0.020, -0.020]
+    LAYDOWN_FOOT_POS_Z: [-0.050, -0.050, -0.050, -0.050, -0.050, -0.050]
 
     # for gaits
     LEG_LIFT_HEIGHT: 0.03      # [m]   // -0.05 + 0.03 = -0.01

@@ -15,7 +15,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-// Pololu Protocol Commands (Compact Protocol)
+// Pololu Protocol Commands (Compact Protocol - no device number)
 constexpr uint8_t MAESTRO_CMD_SET_TARGET = 0x84;
 constexpr uint8_t MAESTRO_CMD_SET_SPEED = 0x87;
 constexpr uint8_t MAESTRO_CMD_SET_ACCELERATION = 0x89;
@@ -29,6 +29,7 @@ constexpr uint16_t MAESTRO_MIN_TARGET = 2000;   // 500µs
 constexpr uint16_t MAESTRO_MAX_TARGET = 10000;  // 2500µs
 constexpr uint16_t MAESTRO_CENTER = 6000;       // 1500µs = center
 constexpr uint8_t MAESTRO_MAX_CHANNELS = 18;
+constexpr uint8_t MAESTRO_DEVICE_NUMBER = 12;   // Default device number
 
 class MaestroProtocol {
    public:
