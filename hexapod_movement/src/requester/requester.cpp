@@ -346,7 +346,9 @@ void CRequester::requestStomp(const MovementRequest& msg) {
 void CRequester::requestClap(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::CLAP;
     auto requestedBody = CPose();
-    requestedBody.orientation.pitch = 20.0;
+    // Keep CLAP within reachable workspace.
+    // Large pitch easily produces unreachable IK targets -> NaNs -> servo "convulsions".
+    requestedBody.orientation.pitch = 5.0;
     kinematics_->setHead(0.0, 10.0);
 
     kinematics_->moveBody(kinematics_->getLegsStandingPositions(), requestedBody);

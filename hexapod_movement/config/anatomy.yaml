@@ -35,20 +35,21 @@ node_movement:
     # RightMid:  	angles: 0°, 2.3°, 7.6°	| x: 0.000, y: 0.130, z: -0.050
     STANDING_FOOT_POS_X: [ 0.092,    0.0, -0.092,  0.092,    0.0, -0.092]
     STANDING_FOOT_POS_Y: [ 0.092,  0.130,  0.092, -0.092, -0.130, -0.092]
-    # Standing: body higher (feet lower relative to body) -> more negative Z
-    STANDING_FOOT_POS_Z: [-0.080, -0.080, -0.080, -0.080, -0.080, -0.080]
+    # Standing (conservative): keep within reachable workspace to avoid IK NaNs
+    STANDING_FOOT_POS_Z: [-0.060, -0.060, -0.060, -0.060, -0.060, -0.060]
 
     # Reference foot positions for lay down (resting position)
     LAYDOWN_FOOT_POS_X: [ 0.092,    0.0, -0.092,  0.092,    0.0, -0.092]
     LAYDOWN_FOOT_POS_Y: [ 0.092,  0.130,  0.092, -0.092, -0.130, -0.092]
-    # Laydown: body lower (feet closer to body) -> less negative Z
-    LAYDOWN_FOOT_POS_Z: [-0.030, -0.030, -0.030, -0.030, -0.030, -0.030]
+    # Laydown: slightly lower than standing
+    LAYDOWN_FOOT_POS_Z: [-0.040, -0.040, -0.040, -0.040, -0.040, -0.040]
 
     # for gaits
     LEG_LIFT_HEIGHT: 0.02      # [m] - leg lift during walk
     GAIT_STEP_LENGTH: 0.02     # [m] - step length
     # Controls gait cadence: higher = faster (used with dt in gaitcontroller)
-    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 30.0
+    # Keep moderate to avoid overdriving servos.
+    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 8.0
 
     BODY_MAX_ROLL: 10.0  # deg - reduced for safety
     BODY_MAX_PITCH: 10.0 # deg - reduced for safety

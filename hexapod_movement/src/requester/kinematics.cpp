@@ -162,19 +162,21 @@ void CKinematics::calcLegInverseKinematics(const CPosition& targetFeetPos, CLeg&
 
     double tmpFemur = (sqTibiaLength_ - sqFemurLength_ - sqL) / (-2 * FEMUR_LENGTH * L);
     if (abs(tmpFemur) > 1.0) {
-        RCLCPP_ERROR_STREAM(node_->get_logger(), "ERROR tmpFemur = " << tmpFemur);
-        RCLCPP_ERROR_STREAM(node_->get_logger(),
-                            "targetFeetPos.x: " << targetFeetPos.x << " targetFeetPos.y: " << targetFeetPos.y
-                                                << " targetFeetPos.z: " << targetFeetPos.z);
+        RCLCPP_WARN_STREAM(node_->get_logger(),
+                           "IK clamp tmpFemur=" << tmpFemur << " (unreachable). targetFeetPos: x="
+                                                << targetFeetPos.x << " y=" << targetFeetPos.y << " z="
+                                                << targetFeetPos.z);
+        tmpFemur = std::clamp(tmpFemur, -1.0, 1.0);
     }
     double agFemurRad = acos(zOffset / L) + acos(tmpFemur) - (M_PI / 2);
 
     double tmpTibia = (sqL - sqTibiaLength_ - sqFemurLength_) / (-2 * FEMUR_LENGTH * TIBIA_LENGTH);
     if (abs(tmpTibia) > 1.0) {
-        RCLCPP_ERROR_STREAM(node_->get_logger(), "ERROR tmpTibia = " << tmpTibia);
-        RCLCPP_ERROR_STREAM(node_->get_logger(),
-                            "targetFeetPos.x: " << targetFeetPos.x << " targetFeetPos.y: " << targetFeetPos.y
-                                                << " targetFeetPos.z: " << targetFeetPos.z);
+        RCLCPP_WARN_STREAM(node_->get_logger(),
+                           "IK clamp tmpTibia=" << tmpTibia << " (unreachable). targetFeetPos: x="
+                                                << targetFeetPos.x << " y=" << targetFeetPos.y << " z="
+                                                << targetFeetPos.z);
+        tmpTibia = std::clamp(tmpTibia, -1.0, 1.0);
     }
     double agTibiaRad = acos(tmpTibia) - (M_PI / 2);
 
