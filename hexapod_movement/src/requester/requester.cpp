@@ -15,6 +15,7 @@ CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActi
     node_->declare_parameter<bool>("enable_cmd_vel_input", false);
     node_->declare_parameter<bool>("move_start_lift_enabled", false);
     node_->declare_parameter<int>("move_start_lift_duration_ms", 300);
+    node_->declare_parameter<bool>("log_movement_requests", false);
 
     node_->declare_parameter("cmd_vel_timeout_ms", 400);
     node_->declare_parameter("cmd_vel_deadzone_start", 0.15);
@@ -439,7 +440,7 @@ void CRequester::requestTestLegs(const MovementRequest& msg) {
 // ------------------------------------------------------------------------------------------------------------
 void CRequester::onMovementRequest(const MovementRequest& msg) {
     // Set log_movement_requests:=true only when debugging buttons/requests.
-    if (node_->declare_parameter<bool>("log_movement_requests", false)) {
+    if (node_->get_parameter("log_movement_requests").as_bool()) {
         RCLCPP_INFO(node_->get_logger(), "MovementRequest: type=%u name=%s duration=%u",
                     static_cast<unsigned>(msg.type), msg.name.c_str(), static_cast<unsigned>(msg.duration_ms));
     }
