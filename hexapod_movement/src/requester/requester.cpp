@@ -12,6 +12,8 @@ using std::placeholders::_1;
 
 CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActionExecutor> actionExecutor)
     : node_(node), actionExecutor_(actionExecutor) {
+    node_->declare_parameter<bool>("enable_cmd_vel_input", false);
+
     node_->declare_parameter("cmd_vel_timeout_ms", 400);
     node_->declare_parameter("cmd_vel_deadzone_start", 0.15);
     node_->declare_parameter("cmd_vel_deadzone_stop", 0.05);
@@ -28,8 +30,16 @@ CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActi
 
     m_subMovementRequest = node_->create_subscription<MovementRequest>(
         "movement_request", 10, std::bind(&CRequester::onMovementRequest, this, _1));
-    m_subCmdVel = node_->create_subscription<geometry_msgs::msg::Twist>(
-        "cmd_vel", 10, std::bind(&CRequester::onCmdVel, this, _1));
+    if (node_->get_parameter("enable_cmd_vel_input").get_parameter_value().get<bool>()) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "enable_cmd_vel_input=true: subscribing to cmd_vel inside hexapod_movement. "
+                    "Do NOT use this together with hexapod_cmdvel_bridge, or you'll get two control loops.");
+        m_subCmdVel = node_->create_subscription<geometry_msgs::msg::Twist>(
+            "cmd_vel", 10, std::bind(&CRequester::onCmdVel, this, _1));
+    } else {
+        RCLCPP_INFO(node_->get_logger(),
+                    "enable_cmd_vel_input=false: hexapod_movement will ignore cmd_vel and only use movement_request.");
+    }
 
     // Initialize robot to laydown position on startup
     RCLCPP_INFO(node_->get_logger(), "Initializing robot to LAYDOWN position...");
@@ -74,6 +84,11 @@ void CRequester::requestLayDown(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::LAYDOWN;
     RCLCPP_INFO(node_->get_logger(), "requestLayDown: duration=%d ms", msg.duration_ms);
 
+    // Ensure no old MOVE updates or queued actions fight the laydown sequence.
+    actionExecutor_->cancelRunningRequest();
+    gaitController_->reset();
+    transitionToMoveActive_ = false;
+
     kinematics_->setHead(0.0, -20.0);
     kinematics_->moveBody(kinematics_->getLegsLayDownPositions());
     actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
@@ -84,6 +99,11 @@ void CRequester::requestLayDown(const MovementRequest& msg) {
 void CRequester::requestStandUp(const MovementRequest& msg) {
     activeRequest_ = MovementRequest::STAND_UP;
     RCLCPP_INFO(node_->get_logger(), "requestStandUp: duration=%d ms", msg.duration_ms);
+
+    // Same reasoning as laydown: clear any residual MOVE control.
+    actionExecutor_->cancelRunningRequest();
+    gaitController_->reset();
+    transitionToMoveActive_ = false;
 
     kinematics_->setHead(0.0, 0.0);
     kinematics_->moveBody(kinematics_->getLegsStandingPositions());
@@ -468,7 +488,7 @@ void CRequester::update(std::chrono::milliseconds timeslice) {
     }
 
     // while the movement request is active update the gait controller
-    gaitController_->updateCombinedTripodGait(velocity_, poseBody_);
+    gaitController_->updateCombinedTripodGait(velocity_, timeslice.count() / 1000.0, poseBody_);
     actionExecutor_->requestWithoutQueue({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
                                           std::make_shared<CRequestHead>(kinematics_->getHead()),
                                           std::make_shared<CRequestSendDuration>(timeslice.count(), false)});

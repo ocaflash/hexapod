@@ -4,6 +4,8 @@
 
 #include "requester/gaitcontroller.hpp"
 
+#include <algorithm>
+
 CGaitController::CGaitController(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CKinematics> kinematics)
     : node_(node), kinematics_(kinematics) {
     FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME =
@@ -36,7 +38,10 @@ void CGaitController::liftLegsTripodGroup(bool isFirstTripod) {
     kinematics_->moveBody(positionLiftedLeg);
 }
 
-void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& velocity, CPose body) {
+void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& velocity, double dt_s, CPose body) {
+    // Protect against weird dt (e.g. long stall) to avoid sudden jumps ("convulsions").
+    dt_s = std::clamp(dt_s, 0.0, 0.2);
+
     // low-pass filtering the velocity
     const double alpha = 0.2;  // Adjust alpha for filtering strength (0.0 to 1.0)
     velocity_ = lowPassFilterTwist(velocity_, velocity, alpha);
@@ -60,8 +65,10 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
     double norm_y = linear_y / combined_mag;
     double norm_rot = angular_z / combined_mag;
 
-    // the velocity is taken into account to calculate the gait cycle time with combined_mag
-    double deltaPhase = FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME * combined_mag;
+    // Advance phase based on velocity AND dt.
+    // Previously this was missing dt and caused huge phase jumps at low update rates (e.g. 10Hz),
+    // resulting in abrupt leg direction changes and servo "twitching".
+    double deltaPhase = FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME * combined_mag * dt_s;
     phase_ += deltaPhase;
     // Keep phase bounded to avoid numeric drift over long runs
     phase_ = std::fmod(phase_, 2.0 * M_PI);

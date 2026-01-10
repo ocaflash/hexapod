@@ -27,6 +27,7 @@ class CGaitController {
 
     void liftLegsTripodGroup(bool isFirstTripod = true);
     void updateCombinedTripodGait(const geometry_msgs::msg::Twist& velocity,
+                                  double dt_s,
                                   CPose body = CPose(0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
     void setPhaseNeutral();
 

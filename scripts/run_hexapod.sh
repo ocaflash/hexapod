@@ -4,8 +4,12 @@
 export HOME=/home/orangepi
 export ROS_DOMAIN_ID=0
 
-# Suppress FastDDS XML parser warnings (must be set before sourcing ROS)
-export FASTRTPS_DEFAULT_PROFILES_FILE=""
+# FastDDS XML profiles:
+# Do NOT set FASTRTPS_DEFAULT_PROFILES_FILE to an empty string — FastDDS will try to `realpath("")`
+# and you'll get `[XMLPARSER Error] realpath failed ... loadDefaultXMLFile` on every node.
+# Leave it unset unless you have a real XML profiles file to use.
+unset FASTRTPS_DEFAULT_PROFILES_FILE
+unset FASTDDS_DEFAULT_PROFILES_FILE
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 # Clean ROS2 environment to avoid conflicts with other workspaces
