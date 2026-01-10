@@ -4,9 +4,9 @@ cmdvel_bridge:
     joy_topic: /joy
     movement_request_topic: /movement_request
 
-    linear_x_limit: 0.8
-    linear_y_limit: 0.8
-    angular_z_limit: 2.0
+    linear_x_limit: 1.2
+    linear_y_limit: 1.2
+    angular_z_limit: 3.0
 
     deadzone_start: 0.05
     deadzone_stop: 0.02

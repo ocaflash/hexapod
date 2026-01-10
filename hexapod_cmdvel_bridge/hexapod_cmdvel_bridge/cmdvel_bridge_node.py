@@ -263,7 +263,7 @@ class CmdVelBridge(Node):
             return
 
         if pressed.a:
-            self.get_logger().info("A: Watch")
+            self.get_logger().info("Cross (A): Watch")
             self._publish_request(MovementRequest.WATCH, self._get_int("watch_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -271,7 +271,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("watch_duration_ms"))
             return
         if pressed.b:
-            self.get_logger().info("B: High Five")
+            self.get_logger().info("Circle (B): High Five")
             self._publish_request(MovementRequest.HIGH_FIVE, self._get_int("high_five_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -279,7 +279,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("high_five_duration_ms"))
             return
         if pressed.x:
-            self.get_logger().info("X: Clap")
+            self.get_logger().info("Square (X): Clap")
             self._publish_request(MovementRequest.CLAP, self._get_int("clap_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -287,8 +287,8 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("clap_duration_ms"))
             return
         if pressed.y:
-            self.get_logger().info("Y: Transport")
-            self.is_standing_ = False
+            self.get_logger().info("Triangle (Y): Transport")
+            # Transport is a pose, but we keep is_standing_=True so other actions/cmd_vel keep working after it.
             self._publish_request(MovementRequest.TRANSPORT, self._get_int("transport_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -298,6 +298,18 @@ class CmdVelBridge(Node):
         # L1/R1 are handled as "turn while held" in on_cmd_vel (no discrete action request).
 
     def on_timer(self) -> None:
+        # If teleop_twist_joy doesn't publish /cmd_vel while sticks are neutral,
+        # we still want L1/R1 "turn while held" to work. Generate a MOVE here.
+        if self.is_standing_ and not self._is_locked(self.get_clock().now()):
+            if self._l1_held ^ self._r1_held:
+                angular_z = abs(self._get_double("turn_button_angular_z"))
+                if self._r1_held:
+                    angular_z = -angular_z
+                self.movement_active_ = True
+                self.last_cmd_vel_time_ = self.get_clock().now()
+                self._publish_move(0.0, 0.0, angular_z)
+                return
+
         if not self.is_standing_ or not self.movement_active_:
             return
         if self.last_cmd_vel_time_ is None:

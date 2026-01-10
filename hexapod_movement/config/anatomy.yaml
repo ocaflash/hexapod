@@ -45,8 +45,8 @@ node_movement:
     LAYDOWN_FOOT_POS_Z: [-0.040, -0.040, -0.040, -0.040, -0.040, -0.040]
 
     # for gaits
-    LEG_LIFT_HEIGHT: 0.02      # [m] - leg lift during walk
-    GAIT_STEP_LENGTH: 0.02     # [m] - step length
+    LEG_LIFT_HEIGHT: 0.025     # [m] - leg lift during walk
+    GAIT_STEP_LENGTH: 0.03     # [m] - step length
     # Controls gait cadence: higher = faster (used with dt in gaitcontroller)
     # Keep moderate to avoid overdriving servos.
     FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 10.0
