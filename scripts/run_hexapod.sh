@@ -4,6 +4,10 @@
 export HOME=/home/orangepi
 export ROS_DOMAIN_ID=0
 
+# Suppress FastDDS XML parser warnings (must be set before sourcing ROS)
+export FASTRTPS_DEFAULT_PROFILES_FILE=""
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+
 # Clean ROS2 environment to avoid conflicts with other workspaces
 unset AMENT_PREFIX_PATH
 unset CMAKE_PREFIX_PATH
@@ -64,9 +68,6 @@ fi
 # Source ROS2 environment
 source "$ROS_SETUP"
 source "$WORKSPACE_DIR/install/local_setup.bash"
-
-# Suppress FastDDS XML parser warnings
-export FASTRTPS_DEFAULT_PROFILES_FILE=""
 
 # Launch hexapod
 exec ros2 launch hexapod_bringup target_launch.py
