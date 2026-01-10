@@ -307,13 +307,20 @@ class CmdVelBridge(Node):
     def on_timer(self) -> None:
         # If teleop_twist_joy doesn't publish /cmd_vel while sticks are neutral,
         # we still want L1/R1 "turn while held" to work. Generate a MOVE here.
-        if self.is_standing_ and not self._is_locked(self.get_clock().now()):
+        now = self.get_clock().now()
+        if self.is_standing_ and not self._is_locked(now):
             if self._l1_held ^ self._r1_held:
+                # IMPORTANT: do not fight an active /cmd_vel stream.
+                # When /cmd_vel is being published (stick moved), turning is handled in on_cmd_vel().
+                # Only synthesize a turn when /cmd_vel is stale (sticks neutral and teleop stops publishing).
+                if self.last_cmd_vel_time_ is not None and self._elapsed_ms(self.last_cmd_vel_time_, now) <= 150:
+                    return
                 angular_z = abs(self._get_double("turn_button_angular_z"))
                 if self._r1_held:
                     angular_z = -angular_z
                 self.movement_active_ = True
-                self.last_cmd_vel_time_ = self.get_clock().now()
+                self.last_cmd_vel_time_ = now
+                self.last_non_neutral_time_ = now
                 self._publish_move(0.0, 0.0, angular_z)
                 return
 
@@ -322,7 +329,6 @@ class CmdVelBridge(Node):
         if self.last_cmd_vel_time_ is None:
             return
 
-        now = self.get_clock().now()
         if self._elapsed_ms(self.last_cmd_vel_time_, now) > self._get_int("timeout_ms"):
             self.get_logger().warn("cmd_vel timeout: stopping MOVE")
             self.movement_active_ = False
