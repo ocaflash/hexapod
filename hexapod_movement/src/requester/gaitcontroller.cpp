@@ -12,11 +12,15 @@ CGaitController::CGaitController(std::shared_ptr<rclcpp::Node> node, std::shared
         node->declare_parameter<double>("FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME", 30.0);
     GAIT_STEP_LENGTH = node->declare_parameter<double>("GAIT_STEP_LENGTH", 0.025);
     LEG_LIFT_HEIGHT = node->declare_parameter<double>("LEG_LIFT_HEIGHT", 0.03);
+    max_linear_vel_ = node->declare_parameter<double>("GAIT_MAX_LINEAR_VEL", 0.8);
+    max_angular_vel_ = node->declare_parameter<double>("GAIT_MAX_ANGULAR_VEL", 2.0);
+    start_ramp_time_s_ = node->declare_parameter<double>("GAIT_START_RAMP_TIME_S", 0.25);
 }
 
 void CGaitController::reset() {
     phase_ = 0.0;
     velocity_ = geometry_msgs::msg::Twist();
+    ramp_ = 0.0;
 }
 
 void CGaitController::setPhaseNeutral() {
@@ -42,6 +46,13 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
     // Protect against weird dt (e.g. long stall) to avoid sudden jumps ("convulsions").
     dt_s = std::clamp(dt_s, 0.0, 0.2);
 
+    // Smooth start after STOP: ramp gait amplitude from 0->1 over a short time window.
+    if (start_ramp_time_s_ <= 1e-3) {
+        ramp_ = 1.0;
+    } else {
+        ramp_ = std::min(1.0, ramp_ + (dt_s / start_ramp_time_s_));
+    }
+
     // low-pass filtering the velocity
     const double alpha = 0.2;  // Adjust alpha for filtering strength (0.0 to 1.0)
     velocity_ = lowPassFilterTwist(velocity_, velocity, alpha);
@@ -54,6 +65,13 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
     double angular_z = velocity_.angular.z;
 
     constexpr double ROTATION_WEIGHT = 0.7;
+
+    // Scale step amplitude by stick deflection (independent of cadence).
+    const double lin_mag = std::hypot(linear_x, linear_y);
+    const double lin_norm = (max_linear_vel_ > 1e-6) ? std::clamp(lin_mag / max_linear_vel_, 0.0, 1.0) : 0.0;
+    const double rot_norm =
+        (max_angular_vel_ > 1e-6) ? std::clamp(std::abs(angular_z) / max_angular_vel_, 0.0, 1.0) : 0.0;
+    const double input_scale = std::max(lin_norm, rot_norm) * ramp_;
 
     double combined_mag =
         std::sqrt((linear_x * linear_x) + (linear_y * linear_y) + (ROTATION_WEIGHT * angular_z * angular_z));
@@ -82,8 +100,8 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
         double phaseOffset = isFirstTripod ? 0.0 : M_PI;
         double phaseWithOffset = phase_ + phaseOffset + M_PI_2;
 
-        double step = GAIT_STEP_LENGTH * cos(phaseWithOffset);
-        double lift = LEG_LIFT_HEIGHT * std::max(0.0, sin(phaseWithOffset));
+        double step = (GAIT_STEP_LENGTH * input_scale) * cos(phaseWithOffset);
+        double lift = (LEG_LIFT_HEIGHT * input_scale) * std::max(0.0, sin(phaseWithOffset));
 
         const auto baseFootPos = kinematics_->getLegsStandingPositions().at(index);
 

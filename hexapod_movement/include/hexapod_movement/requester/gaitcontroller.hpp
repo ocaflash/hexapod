@@ -40,11 +40,17 @@ class CGaitController {
     std::shared_ptr<CKinematics> kinematics_;
     bool useGroup1_ = true;
 
+    // Normalization and smoothing (params)
+    double max_linear_vel_ = 0.8;
+    double max_angular_vel_ = 2.0;
+    double start_ramp_time_s_ = 0.25;
+
     const std::vector<ELegIndex> groupFirstTripod_ = {ELegIndex::LeftFront, ELegIndex::RightMid,
                                                       ELegIndex::LeftBack};
     const std::vector<ELegIndex> groupSecondTripod_ = {ELegIndex::RightFront, ELegIndex::LeftMid,
                                                        ELegIndex::RightBack};
 
     double phase_ = double(0);
+    double ramp_ = 1.0;
     geometry_msgs::msg::Twist velocity_{geometry_msgs::msg::Twist()};
 };

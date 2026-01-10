@@ -230,7 +230,7 @@ class CmdVelBridge(Node):
             return
 
         if pressed.a:
-            self.get_logger().info("X: Watch")
+            self.get_logger().info("Cross (X): Watch")
             self._publish_request(MovementRequest.WATCH, self._get_int("watch_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -238,7 +238,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("watch_duration_ms"))
             return
         if pressed.b:
-            self.get_logger().info("Circle: High Five")
+            self.get_logger().info("Circle (O): High Five")
             self._publish_request(MovementRequest.HIGH_FIVE, self._get_int("high_five_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -246,7 +246,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("high_five_duration_ms"))
             return
         if pressed.x:
-            self.get_logger().info("Square: Clap")
+            self.get_logger().info("Square (□): Clap")
             self._publish_request(MovementRequest.CLAP, self._get_int("clap_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -254,7 +254,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("clap_duration_ms"))
             return
         if pressed.y:
-            self.get_logger().info("Triangle: Transport")
+            self.get_logger().info("Triangle (△): Transport")
             self.is_standing_ = False
             self._publish_request(MovementRequest.TRANSPORT, self._get_int("transport_duration_ms"))
             self.movement_active_ = False

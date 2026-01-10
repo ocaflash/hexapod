@@ -24,10 +24,12 @@ cmdvel_bridge:
     look_right_duration_ms: 2000
 
     button_start_index: 9
-    button_a_index: 2
-    button_b_index: 1
-    button_x_index: 3
-    button_y_index: 0
+    # DualShock 4 (Linux joy_node) button mapping:
+    # 0=square, 1=cross, 2=circle, 3=triangle, 4=L1, 5=R1, 8=share, 9=options
+    button_a_index: 1   # cross (X)
+    button_b_index: 2   # circle (O)
+    button_x_index: 0   # square (□)
+    button_y_index: 3   # triangle (△)
     button_l1_index: 4
     button_r1_index: 5
 

@@ -13,6 +13,8 @@ using std::placeholders::_1;
 CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActionExecutor> actionExecutor)
     : node_(node), actionExecutor_(actionExecutor) {
     node_->declare_parameter<bool>("enable_cmd_vel_input", false);
+    node_->declare_parameter<bool>("move_start_lift_enabled", false);
+    node_->declare_parameter<int>("move_start_lift_duration_ms", 300);
 
     node_->declare_parameter("cmd_vel_timeout_ms", 400);
     node_->declare_parameter("cmd_vel_deadzone_start", 0.15);
@@ -194,11 +196,22 @@ void CRequester::requestMove(const MovementRequest& msg) {
         // clear it so old steps cannot "fight" the new gait updates.
         actionExecutor_->cancelRunningRequest();
         gaitController_->reset();
-        transitionToMoveActive_ = true;
-        gaitController_->liftLegsTripodGroup(true);
-        actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
-                                  std::make_shared<CRequestHead>(kinematics_->getHead()),
-                                  std::make_shared<CRequestSendDuration>(500)});
+        const bool doStartLift =
+            node_->get_parameter("move_start_lift_enabled").get_parameter_value().get<bool>();
+        if (doStartLift) {
+            transitionToMoveActive_ = true;
+            gaitController_->liftLegsTripodGroup(true);
+            const int lift_ms = std::max(1, node_->get_parameter("move_start_lift_duration_ms")
+                                                .get_parameter_value()
+                                                .get<int>());
+            actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
+                                      std::make_shared<CRequestHead>(kinematics_->getHead()),
+                                      std::make_shared<CRequestSendDuration>(lift_ms)});
+        } else {
+            // Smoother restart: start gait immediately and let gaitcontroller ramp step amplitude up.
+            gaitController_->setPhaseNeutral();
+            transitionToMoveActive_ = false;
+        }
     }
     activeRequest_ = MovementRequest::MOVE;
     velocity_ = msg.velocity;
