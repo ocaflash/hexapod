@@ -1,22 +1,30 @@
 teleop_twist_joy:
   ros__parameters:
-    require_enable_button: true
+    # No enable button required - sticks work directly
+    require_enable_button: false
     enable_button: 5
     enable_turbo_button: 4
 
+    # DualShock 4 axis mapping (Linux/SDL):
+    # 0 = Left stick X (horizontal)
+    # 1 = Left stick Y (vertical)
+    # 2 = L2 trigger
+    # 3 = Right stick X (horizontal)
+    # 4 = Right stick Y (vertical)
+    # 5 = R2 trigger
     axis_linear:
-      x: 1
-      y: 0
+      x: 1   # Left stick vertical
+      y: 0   # Left stick horizontal
     axis_angular:
-      yaw: 2
+      yaw: 3  # Right stick horizontal (was 2 = L2 trigger!)
 
     scale_linear:
-      x: 0.35
-      y: 0.35
+      x: 0.5
+      y: 0.5
     scale_linear_turbo:
-      x: 0.7
-      y: 0.7
+      x: 0.8
+      y: 0.8
     scale_angular:
-      yaw: 1.0
+      yaw: 1.5
     scale_angular_turbo:
-      yaw: 1.8
+      yaw: 2.5

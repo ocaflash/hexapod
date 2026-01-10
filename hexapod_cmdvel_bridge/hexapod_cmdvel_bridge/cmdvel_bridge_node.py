@@ -228,6 +228,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.WATCH, self._get_int("watch_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None
             self._lock(self._get_int("watch_duration_ms"))
             return
         if pressed.b:
@@ -235,6 +236,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.HIGH_FIVE, self._get_int("high_five_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None
             self._lock(self._get_int("high_five_duration_ms"))
             return
         if pressed.x:
@@ -242,6 +244,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.CLAP, self._get_int("clap_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None
             self._lock(self._get_int("clap_duration_ms"))
             return
         if pressed.y:
@@ -250,6 +253,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.TRANSPORT, self._get_int("transport_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None
             self._lock(self._get_int("transport_duration_ms"))
             return
         if pressed.l1:
@@ -257,6 +261,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.LOOK_LEFT, self._get_int("look_left_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None  # Reset timeout
             self._lock(self._get_int("look_left_duration_ms"))
             return
         if pressed.r1:
@@ -264,6 +269,7 @@ class CmdVelBridge(Node):
             self._publish_request(MovementRequest.LOOK_RIGHT, self._get_int("look_right_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None  # Reset timeout
             self._lock(self._get_int("look_right_duration_ms"))
             return
 
