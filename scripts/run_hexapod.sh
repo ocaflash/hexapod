@@ -65,5 +65,8 @@ fi
 source "$ROS_SETUP"
 source "$WORKSPACE_DIR/install/local_setup.bash"
 
+# Suppress FastDDS XML parser warnings
+export FASTRTPS_DEFAULT_PROFILES_FILE=""
+
 # Launch hexapod
 exec ros2 launch hexapod_bringup target_launch.py
