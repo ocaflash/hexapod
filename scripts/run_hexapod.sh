@@ -4,6 +4,26 @@
 export HOME=/home/orangepi
 export ROS_DOMAIN_ID=0
 
+# Clean ROS2 environment to avoid conflicts with other workspaces
+unset AMENT_PREFIX_PATH
+unset CMAKE_PREFIX_PATH
+unset COLCON_PREFIX_PATH
+unset ROS_PACKAGE_PATH
+
+# Kill any existing hexapod processes
+pkill -9 -f "ros2 launch hexapod" 2>/dev/null
+pkill -9 -f "node_movement" 2>/dev/null
+pkill -9 -f "node_servo" 2>/dev/null
+pkill -9 -f "node_brain" 2>/dev/null
+pkill -9 -f "cmdvel_bridge" 2>/dev/null
+pkill -9 -f "joy_node" 2>/dev/null
+pkill -9 -f "teleop_node" 2>/dev/null
+sleep 0.5
+
+# Release serial port if held
+fuser -k /dev/ttyS5 2>/dev/null
+sleep 0.2
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$HOME/hexapod_ws"
 
