@@ -440,7 +440,7 @@ void CRequester::requestTestLegs(const MovementRequest& msg) {
 // ------------------------------------------------------------------------------------------------------------
 void CRequester::onMovementRequest(const MovementRequest& msg) {
     // Set log_movement_requests:=true only when debugging buttons/requests.
-    if (node_->get_parameter("log_movement_requests").as_bool()) {
+    if (msg.type != MovementRequest::MOVE || node_->get_parameter("log_movement_requests").as_bool()) {
         RCLCPP_INFO(node_->get_logger(), "MovementRequest: type=%u name=%s duration=%u",
                     static_cast<unsigned>(msg.type), msg.name.c_str(), static_cast<unsigned>(msg.duration_ms));
     }

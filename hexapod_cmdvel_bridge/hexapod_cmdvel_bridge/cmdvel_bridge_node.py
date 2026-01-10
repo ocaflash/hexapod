@@ -130,21 +130,28 @@ class CmdVelBridge(Node):
         if self._is_locked(now) or not self.is_standing_:
             return
 
+        # IMPORTANT: apply deadzone BEFORE trigger speed scaling.
+        # Otherwise L2 slow-mode can push small stick inputs below deadzone and cause
+        # rapid MOVE <-> MOVE_TO_STAND toggling ("leg convulsions").
+        linear_x = self._clamp(msg.linear.x, self._get_double("linear_x_limit"))
+        linear_y = self._clamp(msg.linear.y, self._get_double("linear_y_limit"))
+        angular_z = self._clamp(msg.angular.z, self._get_double("angular_z_limit"))
+
+        deadzone = self._get_double("deadzone_stop") if self.movement_active_ else self._get_double("deadzone_start")
+        linear_x = self._apply_deadzone(linear_x, deadzone)
+        linear_y = self._apply_deadzone(linear_y, deadzone)
+        angular_z = self._apply_deadzone(angular_z, deadzone)
+
         speed_scale = self._speed_scale()
-        linear_x = self._clamp(msg.linear.x * speed_scale, self._get_double("linear_x_limit"))
-        linear_y = self._clamp(msg.linear.y * speed_scale, self._get_double("linear_y_limit"))
-        angular_z = self._clamp(msg.angular.z * speed_scale, self._get_double("angular_z_limit"))
+        linear_x = self._clamp(linear_x * speed_scale, self._get_double("linear_x_limit"))
+        linear_y = self._clamp(linear_y * speed_scale, self._get_double("linear_y_limit"))
+        angular_z = self._clamp(angular_z * speed_scale, self._get_double("angular_z_limit"))
 
         # L1/R1: turn in place (override yaw while held)
         if self._l1_held and not self._r1_held:
             angular_z = abs(self._get_double("turn_button_angular_z"))
         elif self._r1_held and not self._l1_held:
             angular_z = -abs(self._get_double("turn_button_angular_z"))
-
-        deadzone = self._get_double("deadzone_stop") if self.movement_active_ else self._get_double("deadzone_start")
-        linear_x = self._apply_deadzone(linear_x, deadzone)
-        linear_y = self._apply_deadzone(linear_y, deadzone)
-        angular_z = self._apply_deadzone(angular_z, deadzone)
 
         moving = any(abs(v) > 0.0 for v in (linear_x, linear_y, angular_z))
 
@@ -225,75 +232,75 @@ class CmdVelBridge(Node):
         if pressed.start:
             if not self.is_standing_:
                 self.get_logger().info("OPTIONS: Standing up...")
+                self._lock(self._get_int("stand_duration_ms"))
                 self.is_standing_ = True
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
                 self.last_cmd_vel_time_ = None
                 self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
-                self._lock(self._get_int("stand_duration_ms"))
             else:
                 self.get_logger().info("OPTIONS: Laying down...")
+                self._lock(self._get_int("laydown_duration_ms"))
                 self.is_standing_ = False
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
                 self.last_cmd_vel_time_ = None
                 self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
-                self._lock(self._get_int("laydown_duration_ms"))
             return
 
         if not self.is_standing_:
             if pressed.dpad_up:
                 self.get_logger().info("DPAD UP: Standing up...")
+                self._lock(self._get_int("stand_duration_ms"))
                 self.is_standing_ = True
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
                 self.last_cmd_vel_time_ = None
                 self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
-                self._lock(self._get_int("stand_duration_ms"))
             return
 
         if pressed.dpad_down:
             self.get_logger().info("DPAD DOWN: Laying down...")
+            self._lock(self._get_int("laydown_duration_ms"))
             self.is_standing_ = False
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
             self.last_cmd_vel_time_ = None
             self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
-            self._lock(self._get_int("laydown_duration_ms"))
             return
 
         if pressed.a:
             self.get_logger().info("Cross (A): Watch")
+            self._lock(self._get_int("watch_duration_ms"))
             self._publish_request(MovementRequest.WATCH, self._get_int("watch_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
             self.last_cmd_vel_time_ = None
-            self._lock(self._get_int("watch_duration_ms"))
             return
         if pressed.b:
             self.get_logger().info("Circle (B): High Five")
+            self._lock(self._get_int("high_five_duration_ms"))
             self._publish_request(MovementRequest.HIGH_FIVE, self._get_int("high_five_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
             self.last_cmd_vel_time_ = None
-            self._lock(self._get_int("high_five_duration_ms"))
             return
         if pressed.x:
             self.get_logger().info("Square (X): Clap")
+            self._lock(self._get_int("clap_duration_ms"))
             self._publish_request(MovementRequest.CLAP, self._get_int("clap_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
             self.last_cmd_vel_time_ = None
-            self._lock(self._get_int("clap_duration_ms"))
             return
         if pressed.y:
             self.get_logger().info("Triangle (Y): Transport")
             # Transport is a pose, but we keep is_standing_=True so other actions/cmd_vel keep working after it.
+            self._lock(self._get_int("transport_duration_ms"))
             self._publish_request(MovementRequest.TRANSPORT, self._get_int("transport_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
             self.last_cmd_vel_time_ = None
-            self._lock(self._get_int("transport_duration_ms"))
             return
         # L1/R1 are handled as "turn while held" in on_cmd_vel (no discrete action request).
 
