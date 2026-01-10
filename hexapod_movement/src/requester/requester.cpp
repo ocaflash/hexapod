@@ -201,9 +201,9 @@ void CRequester::requestMove(const MovementRequest& msg) {
         if (doStartLift) {
             transitionToMoveActive_ = true;
             gaitController_->liftLegsTripodGroup(true);
-            const int lift_ms = std::max(1, node_->get_parameter("move_start_lift_duration_ms")
-                                                .get_parameter_value()
-                                                .get<int>());
+            const int64_t lift_ms_i64 = std::max<int64_t>(
+                1, node_->get_parameter("move_start_lift_duration_ms").as_int());
+            const uint32_t lift_ms = static_cast<uint32_t>(lift_ms_i64);
             actionExecutor_->request({std::make_shared<CRequestLegs>(kinematics_->getLegsAngles()),
                                       std::make_shared<CRequestHead>(kinematics_->getHead()),
                                       std::make_shared<CRequestSendDuration>(lift_ms)});
