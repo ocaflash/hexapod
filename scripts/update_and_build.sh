@@ -25,9 +25,9 @@ git reset --hard origin/main
 
 # Clean build artifacts that may cause conflicts
 cd "$WORKSPACE_DIR"
-rm -rf build/hexapod_interfaces 2>/dev/null || true
+rm -rf build install log 2>/dev/null || true
 
 # Rebuild: 1 package at a time, 2 compile threads per package
-MAKEFLAGS="-j2" colcon build --parallel-workers 1
+MAKEFLAGS="-j2" colcon build --symlink-install --parallel-workers 1 --cmake-clean-cache
 
 echo "=== Update complete ==="
