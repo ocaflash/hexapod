@@ -66,13 +66,6 @@ void CGaitController::updateCombinedTripodGait(const geometry_msgs::msg::Twist& 
     // Keep phase bounded to avoid numeric drift over long runs
     phase_ = std::fmod(phase_, 2.0 * M_PI);
 
-    // Log occasionally
-    static int logCnt = 0;
-    if (++logCnt % 30 == 0) {
-        RCLCPP_INFO(node_->get_logger(), "Gait: vel=(%.3f,%.3f,%.3f) mag=%.3f dPhase=%.3f phase=%.2f",
-                    linear_x, linear_y, angular_z, combined_mag, deltaPhase, phase_);
-    }
-
     std::map<ELegIndex, CPosition> targetPositions;
 
     for (auto& [index, leg] : kinematics_->getLegs()) {

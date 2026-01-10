@@ -145,9 +145,6 @@ void ServoController::publishAngles() {
 }
 
 void ServoController::onServoRequestReceived(const ServoRequest& msg) {
-    static int logCounter = 0;
-    bool shouldLog = (++logCounter % 20 == 0);  // Log every 20th message
-    
     for (size_t idx = 0; idx < msg.target_angles.size() && idx < servos_.size(); ++idx) {
         double req_angle = msg.target_angles[idx].angle_deg;
         double diff = std::abs(servos_.at(idx).getAngle() - req_angle);
@@ -156,12 +153,6 @@ void ServoController::onServoRequestReceived(const ServoRequest& msg) {
         
         servos_.at(idx).setAngle(req_angle);
         uint16_t us = angleToMicroseconds(req_angle, idx);
-        
-        if (shouldLog && idx == 0) {
-            RCLCPP_INFO(node_->get_logger(), "Servo[0] angle=%.1f -> %d us (ch=%d)", 
-                        req_angle, us, servos_.at(idx).getChannel());
-        }
-        
         protocol_->setTargetMicroseconds(servos_.at(idx).getChannel(), us);
     }
 }

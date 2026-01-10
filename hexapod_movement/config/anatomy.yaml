@@ -43,9 +43,9 @@ node_movement:
     LAYDOWN_FOOT_POS_Z: [-0.050, -0.050, -0.050, -0.050, -0.050, -0.050]
 
     # for gaits
-    LEG_LIFT_HEIGHT: 0.03      # [m]   // -0.05 + 0.03 = -0.01
-    GAIT_STEP_LENGTH: 0.025    # [m]
-    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 30.0      # [s²/m] ??
+    LEG_LIFT_HEIGHT: 0.025     # [m] - leg lift during walk
+    GAIT_STEP_LENGTH: 0.03     # [m] - step length
+    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 3.0  # Reduced from 30 - was causing convulsions
 
     BODY_MAX_ROLL: 10.0  # deg - reduced for safety
     BODY_MAX_PITCH: 10.0 # deg - reduced for safety

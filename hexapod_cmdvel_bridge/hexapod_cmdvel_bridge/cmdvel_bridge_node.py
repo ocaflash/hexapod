@@ -110,6 +110,7 @@ class CmdVelBridge(Node):
         now = self.get_clock().now()
         self.last_cmd_vel_time_ = now
 
+        # Block all movement if not standing or locked
         if self._is_locked(now) or not self.is_standing_:
             return
 
@@ -141,6 +142,7 @@ class CmdVelBridge(Node):
                     MovementRequest.MOVE_TO_STAND,
                     self._get_int("move_to_stand_duration_ms"),
                 )
+                self._lock(self._get_int("move_to_stand_duration_ms"))
 
     def on_joy(self, msg: Joy) -> None:
         now = self.get_clock().now()
@@ -191,16 +193,18 @@ class CmdVelBridge(Node):
             if not self.is_standing_:
                 self.get_logger().info("OPTIONS: Standing up...")
                 self.is_standing_ = True
-                self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
+                self.last_cmd_vel_time_ = None
+                self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
                 self._lock(self._get_int("stand_duration_ms"))
             else:
                 self.get_logger().info("OPTIONS: Laying down...")
                 self.is_standing_ = False
-                self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
+                self.last_cmd_vel_time_ = None
+                self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
                 self._lock(self._get_int("laydown_duration_ms"))
             return
 
@@ -208,18 +212,20 @@ class CmdVelBridge(Node):
             if pressed.dpad_up:
                 self.get_logger().info("DPAD UP: Standing up...")
                 self.is_standing_ = True
-                self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
                 self.movement_active_ = False
                 self.last_non_neutral_time_ = None
+                self.last_cmd_vel_time_ = None
+                self._publish_request(MovementRequest.STAND_UP, self._get_int("stand_duration_ms"))
                 self._lock(self._get_int("stand_duration_ms"))
             return
 
         if pressed.dpad_down:
             self.get_logger().info("DPAD DOWN: Laying down...")
             self.is_standing_ = False
-            self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
+            self.last_cmd_vel_time_ = None
+            self._publish_request(MovementRequest.LAYDOWN, self._get_int("laydown_duration_ms"))
             self._lock(self._get_int("laydown_duration_ms"))
             return
 
