@@ -23,9 +23,11 @@ cd "$SRC_DIR"
 git fetch origin
 git reset --hard origin/main
 
-# Rebuild: 1 package at a time, 2 compile threads per package
-# OrangePi Zero 2W has 4 cores, this keeps load manageable
+# Clean build artifacts that may cause conflicts
 cd "$WORKSPACE_DIR"
-MAKEFLAGS="-j2" colcon build --symlink-install --parallel-workers 1
+rm -rf build/hexapod_interfaces 2>/dev/null || true
+
+# Rebuild: 1 package at a time, 2 compile threads per package
+MAKEFLAGS="-j2" colcon build --parallel-workers 1
 
 echo "=== Update complete ==="
