@@ -60,10 +60,19 @@ class CmdVelBridge(Node):
         self.declare_parameter("button_y_index", 0)
         self.declare_parameter("button_l1_index", 4)
         self.declare_parameter("button_r1_index", 5)
+        self.declare_parameter("button_l2_index", 6)
+        self.declare_parameter("button_r2_index", 7)
 
         self.declare_parameter("dpad_vertical_axis_index", 7)
         self.declare_parameter("dpad_horizontal_axis_index", 6)
         self.declare_parameter("dpad_axis_threshold", 0.5)
+
+        # Triggers (analog speed control)
+        self.declare_parameter("axis_l2_index", 2)
+        self.declare_parameter("axis_r2_index", 5)
+        self.declare_parameter("trigger_deadzone", 0.02)
+        self.declare_parameter("slow_scale", 0.5)
+        self.declare_parameter("turbo_scale", 1.5)
 
         self.publisher_ = self.create_publisher(
             MovementRequest,
@@ -106,6 +115,10 @@ class CmdVelBridge(Node):
 
         self.get_logger().info("cmd_vel bridge started (OPTIONS or DPAD UP to stand)")
 
+        # Last trigger values (0..1)
+        self._l2 = 0.0
+        self._r2 = 0.0
+
     def on_cmd_vel(self, msg: Twist) -> None:
         now = self.get_clock().now()
         self.last_cmd_vel_time_ = now
@@ -114,9 +127,10 @@ class CmdVelBridge(Node):
         if self._is_locked(now) or not self.is_standing_:
             return
 
-        linear_x = self._clamp(msg.linear.x, self._get_double("linear_x_limit"))
-        linear_y = self._clamp(msg.linear.y, self._get_double("linear_y_limit"))
-        angular_z = self._clamp(msg.angular.z, self._get_double("angular_z_limit"))
+        speed_scale = self._speed_scale()
+        linear_x = self._clamp(msg.linear.x, self._get_double("linear_x_limit") * speed_scale)
+        linear_y = self._clamp(msg.linear.y, self._get_double("linear_y_limit") * speed_scale)
+        angular_z = self._clamp(msg.angular.z, self._get_double("angular_z_limit") * speed_scale)
 
         deadzone = self._get_double("deadzone_stop") if self.movement_active_ else self._get_double("deadzone_start")
         linear_x = self._apply_deadzone(linear_x, deadzone)
@@ -162,8 +176,14 @@ class CmdVelBridge(Node):
         y = btn(self._get_int("button_y_index"))
         l1 = btn(self._get_int("button_l1_index"))
         r1 = btn(self._get_int("button_r1_index"))
+        l2_btn = btn(self._get_int("button_l2_index"))
+        r2_btn = btn(self._get_int("button_r2_index"))
 
         dpad_up, dpad_down = self._dpad_vertical(axes)
+
+        # Update trigger values for speed scaling
+        self._l2 = self._read_trigger(axes, self._get_int("axis_l2_index"), l2_btn)
+        self._r2 = self._read_trigger(axes, self._get_int("axis_r2_index"), r2_btn)
 
         pressed = ButtonState(
             start=start and not self.prev_buttons_.start,
@@ -230,7 +250,7 @@ class CmdVelBridge(Node):
             return
 
         if pressed.a:
-            self.get_logger().info("Cross (X): Watch")
+            self.get_logger().info("A: Watch")
             self._publish_request(MovementRequest.WATCH, self._get_int("watch_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -238,7 +258,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("watch_duration_ms"))
             return
         if pressed.b:
-            self.get_logger().info("Circle (O): High Five")
+            self.get_logger().info("B: High Five")
             self._publish_request(MovementRequest.HIGH_FIVE, self._get_int("high_five_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -246,7 +266,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("high_five_duration_ms"))
             return
         if pressed.x:
-            self.get_logger().info("Square (□): Clap")
+            self.get_logger().info("X: Clap")
             self._publish_request(MovementRequest.CLAP, self._get_int("clap_duration_ms"))
             self.movement_active_ = False
             self.last_non_neutral_time_ = None
@@ -254,7 +274,7 @@ class CmdVelBridge(Node):
             self._lock(self._get_int("clap_duration_ms"))
             return
         if pressed.y:
-            self.get_logger().info("Triangle (△): Transport")
+            self.get_logger().info("Y: Transport")
             self.is_standing_ = False
             self._publish_request(MovementRequest.TRANSPORT, self._get_int("transport_duration_ms"))
             self.movement_active_ = False
@@ -331,6 +351,23 @@ class CmdVelBridge(Node):
     def _get_int(self, name: str) -> int:
         return int(self.get_parameter(name).value)
 
+    def _speed_scale(self) -> float:
+        # L2 slows down, R2 speeds up.
+        dz = self._get_double("trigger_deadzone")
+        l2 = 0.0 if self._l2 < dz else self._l2
+        r2 = 0.0 if self._r2 < dz else self._r2
+
+        slow = self._get_double("slow_scale")
+        turbo = self._get_double("turbo_scale")
+        slow = max(0.1, slow)
+        turbo = max(1.0, turbo)
+
+        # Apply L2 first (0..1): interpolate 1.0 -> slow
+        scale = 1.0 + (slow - 1.0) * l2
+        # Apply R2 (0..1): interpolate current -> current*turbo
+        scale *= 1.0 + (turbo - 1.0) * r2
+        return float(scale)
+
     @staticmethod
     def _clamp(value: float, limit: float) -> float:
         return max(min(value, limit), -limit)
@@ -342,6 +379,18 @@ class CmdVelBridge(Node):
     @staticmethod
     def _elapsed_ms(start: Time, end: Time) -> int:
         return int((end - start).nanoseconds / 1_000_000)
+
+    @staticmethod
+    def _axis_to_unit(value: float) -> float:
+        # DS4 triggers can be reported as [-1..+1] (released..pressed) or [0..1].
+        if -1.05 <= value <= 1.05:
+            return max(0.0, min(1.0, (value + 1.0) * 0.5))
+        return max(0.0, min(1.0, value))
+
+    def _read_trigger(self, axes: list[float], axis_index: int, button_fallback: bool) -> float:
+        if 0 <= axis_index < len(axes):
+            return self._axis_to_unit(float(axes[axis_index]))
+        return 1.0 if button_fallback else 0.0
 
 
 def main() -> None:

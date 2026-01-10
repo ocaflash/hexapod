@@ -49,7 +49,7 @@ node_movement:
     GAIT_STEP_LENGTH: 0.02     # [m] - step length
     # Controls gait cadence: higher = faster (used with dt in gaitcontroller)
     # Keep moderate to avoid overdriving servos.
-    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 8.0
+    FACTOR_VELOCITY_TO_GAIT_CYCLE_TIME: 10.0
 
     BODY_MAX_ROLL: 10.0  # deg - reduced for safety
     BODY_MAX_PITCH: 10.0 # deg - reduced for safety
