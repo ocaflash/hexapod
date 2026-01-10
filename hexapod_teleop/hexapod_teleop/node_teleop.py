@@ -93,7 +93,8 @@ class NodeTeleop(Node):
 
     def publish_joystick_data(self):
         try:
-            axes = [self.joystick.get_axis(i) for i in range(self.joystick.get_numaxes())]
+            num_axes = self.joystick.get_numaxes()
+            axes = [self.joystick.get_axis(i) for i in range(num_axes)]
             buttons = [self.joystick.get_button(i) for i in range(self.joystick.get_numbuttons())]
             hat_index = int(self.get_parameter('hat_index').value)
             hat_values = (
@@ -103,6 +104,13 @@ class NodeTeleop(Node):
             )
         except pygame.error:
             return
+
+        # Log all axes once at startup to help debug mapping
+        if not hasattr(self, '_axes_logged'):
+            self._axes_logged = True
+            self.get_logger().info(f"Joystick has {num_axes} axes")
+            for i, val in enumerate(axes):
+                self.get_logger().info(f"  Axis {i}: {val:.3f}")
 
         def btn(i: int) -> bool:
             return bool(buttons[i]) if i < len(buttons) else False
