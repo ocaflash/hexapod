@@ -16,6 +16,7 @@ CRequester::CRequester(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<CActi
     node_->declare_parameter<bool>("move_start_lift_enabled", false);
     node_->declare_parameter<int>("move_start_lift_duration_ms", 300);
     node_->declare_parameter<bool>("log_movement_requests", false);
+    node_->declare_parameter<bool>("ignore_move_while_action_active", true);
 
     node_->declare_parameter("cmd_vel_timeout_ms", 400);
     node_->declare_parameter("cmd_vel_deadzone_start", 0.15);
@@ -443,6 +444,18 @@ void CRequester::onMovementRequest(const MovementRequest& msg) {
     if (msg.type != MovementRequest::MOVE || node_->get_parameter("log_movement_requests").as_bool()) {
         RCLCPP_INFO(node_->get_logger(), "MovementRequest: type=%u name=%s duration=%u",
                     static_cast<unsigned>(msg.type), msg.name.c_str(), static_cast<unsigned>(msg.duration_ms));
+    }
+
+    // Conflict guard: while an action/pose sequence is running, ignore incoming MOVE stream.
+    // This prevents "MOVE fights with WATCH/CLAP/HIGH_FIVE/TRANSPORT" if another node keeps publishing MOVE.
+    if (msg.type == MovementRequest::MOVE &&
+        node_->get_parameter("ignore_move_while_action_active").as_bool()) {
+        const bool action_running = (activeRequest_ != MovementRequest::MOVE) &&
+                                    (activeRequest_ != MovementRequest::NO_REQUEST) &&
+                                    !actionExecutor_->isDone();
+        if (action_running) {
+            return;
+        }
     }
 
     // check that the new request is inside the requestHandlers_ map
